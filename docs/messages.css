@@ -225,3 +225,117 @@
     margin-left: 340px; 
     padding: 45px 20px;
 }
+
+@media screen and (max-width: 860px) {
+    .header {
+        flex-direction: row;
+        text-align: center;
+    }
+    
+    .sideburger {
+        position: static;
+        width: 100%;
+        padding: 15px 0;
+    }
+    
+    .menu {
+        display: flex;
+        justify-content: center;
+        gap: 40px;
+        border: 1px solid rgb(123, 100, 160) ;
+        border-radius: 15px;
+    }
+    
+    .menu li {
+        font-size: 18px;
+        padding: 5px;
+    }
+
+    main{
+        margin-left: 0;
+    }
+}
+
+@media screen and (max-width: 675px) {
+    .menu {
+        gap: 15px;
+    }
+
+    .menu li {
+        font-size: 18px;
+        padding: 5px;
+    }
+
+    .username{
+        display: none;
+    }
+
+    .notification-dropdown {
+        min-width: 150px; 
+        padding: 5px; 
+      }
+    
+      .notification-item {
+        gap: 5px;
+        padding: 5px;
+      }
+    
+      .notification-item img {
+        height: 28px; 
+      }
+    
+      .message {
+        font-size: 12px;
+        padding: 5px 12px;
+      }
+
+      .profile-header {
+        min-width: 120px;
+        padding: 8px; 
+      }
+    
+      .profile-header a {
+        font-size: 14px;
+      }
+    
+      .profile-header button {
+        padding: 8px; 
+        font-size: 14px; 
+        margin-top: 5px; 
+      }
+}
+
+@media screen and (max-width: 480px) {
+    .notification-dropdown {
+        max-width: 250px; 
+        padding: 3px;
+      }
+    
+      .notification-item {
+        gap: 3px;
+        padding: 3px;
+      }
+
+}
+
+@media screen and (max-width: 320px){
+    .notification-dropdown {
+        max-width: 200px; 
+      }
+
+      .profile-header {
+        min-width: 100px;
+        padding: 8px; 
+      }
+    
+      .profile-header a {
+        font-size: 12px;
+      }
+    
+      .profile-header button {
+        padding: 8px; 
+        font-size: 12px; 
+        margin-top: 5px; 
+      }
+
+}
