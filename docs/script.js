@@ -30,95 +30,118 @@ document.addEventListener('DOMContentLoaded', () => {
       }
   });
 
-  const studentModal = document.getElementById('studentModal');
-  const addBtn = document.getElementById('addStudentBtn');
-  const cancelAddBtn = document.getElementById('cancelBtn');
-  const createBtn = document.getElementById('createBtn');
-  const studentForm = document.getElementById('studentForm');
+const studentModal = document.getElementById('studentModal');
+const addBtn = document.getElementById('addStudentBtn');
+const cancelAddBtn = document.getElementById('cancelBtn');
+const createBtn = document.getElementById('createBtn');
+const studentForm = document.getElementById('studentForm');
 
-  addBtn.addEventListener('click', () => {
-    studentModal.style.display = 'block'; 
-  });
+addBtn.addEventListener('click', () => {
+  studentModal.style.display = 'block';
+});
 
-  cancelAddBtn.addEventListener('click', () => {
-    studentModal.style.display = 'none'; 
-    document.getElementById('studentForm').reset();
-    clearAllErrors();
-  });
+cancelAddBtn.addEventListener('click', () => {
+  studentModal.style.display = 'none';
+  studentForm.reset();
+  clearAllErrors();
+});
 
-  document.querySelector('#studentModal .close').addEventListener('click', () => {
-    studentModal.style.display = 'none';
-    document.getElementById('studentForm').reset();
-    clearAllErrors();
-  });
-  
-  const fields = [
-    { id: 'group', message: 'Please enter group' },
-    { id: 'firstName', message: 'Please enter first name' },
-    { id: 'lastName', message: 'Please enter last name' },
-    { id: 'gender', message: 'Please select gender' },
-    { id: 'birthday', message: 'Please select birthday' }
-  ];
+document.querySelector('#studentModal .close').addEventListener('click', () => {
+  studentModal.style.display = 'none';
+  studentForm.reset();
+  clearAllErrors();
+});
 
-  fields.forEach(({ id }) => {
-    const input = document.getElementById(id);
-    input.addEventListener('input', () => {
-      if (input.value.trim() !== '') {
-        input.classList.remove('error');
-        const errorMsg = input.parentElement.querySelector('.error-message');
-        if (errorMsg) {
-          errorMsg.textContent = '';
+const fields = [
+  { id: 'group', message: 'Please enter group' },
+  { id: 'firstName', message: 'Please enter first name', pattern: /^[A-Za-zА-Яа-яІіЇїЄєҐґ]+$/, patternMessage: 'Only letters allowed' },
+  { id: 'lastName', message: 'Please enter last name', pattern: /^[A-Za-zА-Яа-яІіЇїЄєҐґ]+$/, patternMessage: 'Only letters allowed' },
+  { id: 'gender', message: 'Please select gender' },
+  { id: 'birthday', message: 'Please select birthday', validateDate: true }
+];
+
+fields.forEach(({ id, pattern, patternMessage, validateDate }) => {
+  const input = document.getElementById(id);
+  input.addEventListener('input', () => {
+    const errorMsg = input.parentElement.querySelector('.error-message');
+
+    if (input.value.trim() !== '') {
+      input.classList.remove('error');
+      if (errorMsg) errorMsg.textContent = '';
+
+      if (pattern && !pattern.test(input.value)) {
+        input.classList.add('error');
+        errorMsg.textContent = patternMessage;
+      }
+
+      if (validateDate) {
+        const year = new Date(input.value).getFullYear();
+        if (year < 2000 || year > 2007) {
+          input.classList.add('error');
+          errorMsg.textContent = 'Year must be between 2000 and 2007';
         }
       }
-    });
-  });
-
-  createBtn.addEventListener('click', () => {
-    let isFormValid = true;
-
-    fields.forEach(({ id, message }) => {
-      const input = document.getElementById(id);
-      const wrapper = input.parentElement; 
-      const errorMsg = wrapper.querySelector('.error-message');
-
-      if (!input.value.trim()) {
-        isFormValid = false;
-        input.classList.add('error');
-        errorMsg.textContent = message;
-      }
-    });
-
-    if (isFormValid) {
-      const group = document.getElementById('group').value;
-      const firstName = document.getElementById('firstName').value;
-      const lastName = document.getElementById('lastName').value;
-      const gender = document.getElementById('gender').value;
-      const birthday = document.getElementById('birthday').value;
-
-      addStudentToTable(group, firstName, lastName, gender, birthday);
-
-      studentModal.style.display = 'none';
-      studentForm.reset();
-      clearAllErrors();
     }
   });
+});
+
+createBtn.addEventListener('click', () => {
+  let isFormValid = true;
+
+  fields.forEach(({ id, message, pattern, patternMessage, validateDate }) => {
+    const input = document.getElementById(id);
+    const errorMsg = input.parentElement.querySelector('.error-message');
+
+    if (!input.value.trim()) {
+      isFormValid = false;
+      input.classList.add('error');
+      errorMsg.textContent = message;
+    } else if (pattern && !pattern.test(input.value)) {
+      isFormValid = false;
+      input.classList.add('error');
+      errorMsg.textContent = patternMessage;
+    } else if (validateDate) {
+      const year = new Date(input.value).getFullYear();
+      if (year < 2000 || year > 2007) {
+        isFormValid = false;
+        input.classList.add('error');
+        errorMsg.textContent = 'Year must be between 2000 and 2007';
+      }
+    }
+  });
+
+  if (isFormValid) {
+    const group = document.getElementById('group').value;
+    const firstName = document.getElementById('firstName').value;
+    const lastName = document.getElementById('lastName').value;
+    const gender = document.getElementById('gender').value;
+    const birthday = document.getElementById('birthday').value;
+
+    addStudentToTable(group, firstName, lastName, gender, birthday);
+
+    studentModal.style.display = 'none';
+    studentForm.reset();
+    clearAllErrors();
+  }
+});
+
 
   function addStudentToTable(group, firstName, lastName, gender, birthday) {
     const tbody = document.querySelector('#studentsTable tbody');
     const newRow = document.createElement('tr');
     
     newRow.innerHTML = `
-      <td><input type="checkbox" class="student-checkbox"/></td>
+      <td><input type="checkbox" class="student-checkbox" aria-label="checkbox"/></td>
       <td>${group}</td>
       <td>${firstName} ${lastName}</td>
       <td>${gender}</td>
       <td>${new Date(birthday).toLocaleDateString()}</td>
       <td><span class="status status-inactive"></span></td>
       <td>
-        <button class="edit-btn">
+        <button class="edit-btn" aria-label="Edit student">
           <i class="fa fa-pencil" title="Edit student"></i>
         </button>
-        <button class="delete-btn">
+        <button class="delete-btn" aria-label="Delete student">
           <i class="fa fa-remove" title="Delete student"></i>
         </button>
       </td>
@@ -176,8 +199,63 @@ document.querySelector('#studentsTable').addEventListener('click', (e) => {
   }
 });
 
+const Editfields = [
+  { id: 'editFirstName', message: 'Please enter first name', pattern: /^[A-Za-zА-Яа-яІіЇїЄєҐґ]+$/, patternMessage: 'Only letters allowed' },
+  { id: 'editLastName', message: 'Please enter last name', pattern: /^[A-Za-zА-Яа-яІіЇїЄєҐґ]+$/, patternMessage: 'Only letters allowed' },
+  { id: 'editBirthday', message: 'Please select birthday', validateDate: true }
+];
+
+Editfields.forEach(({ id, pattern, patternMessage, validateDate }) => {
+  const input = document.getElementById(id);
+  input.addEventListener('input', () => {
+    const errorMsg = input.parentElement.querySelector('.error-message');
+
+    if (input.value.trim() !== '') {
+      input.classList.remove('error');
+      if (errorMsg) errorMsg.textContent = '';
+
+      if (pattern && !pattern.test(input.value)) {
+        input.classList.add('error');
+        errorMsg.textContent = patternMessage;
+      }
+
+      if (validateDate) {
+        const year = new Date(input.value).getFullYear();
+        if (year < 2000 || year > 2007) {
+          input.classList.add('error');
+          errorMsg.textContent = 'Year must be between 2000 and 2007';
+        }
+      }
+    }
+  });
+});
+
 document.getElementById('editSaveBtn').addEventListener('click', () => {
-  if (rowToEdit) {
+  let isFormValid = true;
+
+  Editfields.forEach(({ id, message, pattern, patternMessage, validateDate }) => {
+    const input = document.getElementById(id);
+    const errorMsg = input.parentElement.querySelector('.error-message');
+
+    if (!input.value.trim()) {
+      isFormValid = false;
+      input.classList.add('error');
+      errorMsg.textContent = message;
+    } else if (pattern && !pattern.test(input.value)) {
+      isFormValid = false;
+      input.classList.add('error');
+      errorMsg.textContent = patternMessage;
+    } else if (validateDate) {
+      const year = new Date(input.value).getFullYear();
+      if (year < 2000 || year > 2007) {
+        isFormValid = false;
+        input.classList.add('error');
+        errorMsg.textContent = 'Year must be between 2000 and 2007';
+      }
+    }
+  });
+
+  if (isFormValid) {
     const group = document.getElementById('editGroup').value;
     const firstName = document.getElementById('editFirstName').value.trim();
     const lastName = document.getElementById('editLastName').value.trim();
@@ -200,6 +278,7 @@ document.getElementById('editSaveBtn').addEventListener('click', () => {
     rowToEdit = null;
   }
 });
+
 
 document.getElementById('editCancelBtn').addEventListener('click', () => {
   document.getElementById('editStudentModal').style.display = 'none';
