@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+       <meta charset="utf-8">
+       <meta name="viewport" content="width=device-width, initial-scale=1.0">
+       <title>LPNU</title>
+       <meta name="description" content="Це сторінка для управління студентами. 
+       Додавайте, редагуйте та видаляйте студентів легко та швидко.">
+       <link rel="stylesheet" href="./student.css">
+       <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    </head>
+
+    <body>
+    <header>
+        <div class="header">
+            <div class="logo">
+                <a href="student.html">LPNU</a>
+            </div>
+            <div class="user-info">
+            <div class="notification-header">
+                <div class="notification-bell" id="notificationBell">
+                    <i class="fa-regular fa-bell"></i>
+                    <span class="notification-indicator" id="notificationIndicator"></span>
+                </div>
+                <div class="notification-dropdown">
+                    <div class="notification-item">
+                         <img src="ava.jpg" alt="Avatar">
+                         <span>Admin</span>
+                         <div class="message">Перевірте пошту.</div>
+                         </div>
+                    <div class="notification-item">
+                         <img src="ava.jpg" alt="Avatar">
+                         <span>Iolanta K.</span>
+                         <div class="message">Привітусики! Як справи? Чуєш не хочеш піти погуляти?</div>
+                         </div>
+                    <div class="notification-item">
+                         <img src="ava.jpg" alt="Avatar">
+                         <span>Ann S.</span>
+                         <div class="message">Що задали?</div>
+                         </div>
+                        </div>
+                    </div>
+        
+                    <div class="profile-menu">
+                        <img class="avatar" src="ava.jpg" alt="User Avatar">
+                        <span class="username">Iolanta Kolchyntseva</span>
+                        <div class="profile-header">
+                            <a href="profile.html">Profile</a>
+                            <button onclick="logout()">Log Out</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+    <nav class="sideburger">
+        <ul class="menu">
+            <li><a href="dashboard.html">Dashboard</a></li>
+            <li><a href="student.html" class="active">Students</a></li>
+            <li><a href="tasks.html">Tasks</a></li>
+        </ul>
+    </nav>
+
+    <main>
+        <div class="table-container">
+        <h1 class="table-title">Students</h1>
+        
+        <div class="table-wrapper">
+        <div class="icons">
+            <i class="fa-solid fa-plus" aria-hidden="true" title="Add new student" id="addStudentBtn"></i>
+            <i class="fa-regular fa-trash-can" aria-hidden="true" title="Delete all students" id="deleteAllBtn"></i>
+        </div>
+
+        <fieldset>
+        <legend>Select students</legend>
+        <table id="studentsTable">
+        <thead>
+            <tr>
+                <td><label for="selectAll" class="visually-hidden">Select all students</label>
+                    <input type="checkbox" id="selectAll"></td>
+                <th>Group</th>
+                <th>Name</th>
+                <th>Gender</th>
+                <th>Birthday</th>
+                <th>Status</th>
+                <th>Options</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><label for="student1" class="visually-hidden">Select Iolanta Kolchyntseva</label>
+                    <input type="checkbox" id="student1" name="student"></td>
+                <td>PZ-26</td>
+                <td>Iolanta Kolchyntseva</td>
+                <td>F</td>
+                <td>28.07.2005</td>
+                <td><span class="status status-active"></span></td>
+                <td>
+                    <button class="edit-btn" aria-label="Edit student">
+                    <i class="fa fa-pencil" title="Edit student"></i> 
+                    </button>
+                    <button class="delete-btn" aria-label="Delete student">
+                    <i class="fa fa-remove" title="Delete student"></i>
+                    </button>
+                </td>
+            </tr>
+            <tr>
+                <td> <label for="student2" class="visually-hidden">Select Ann Bond</label>
+                    <input type="checkbox" id="student2" name="student"></td>
+                <td>PZ-24</td>
+                <td>Ann Bond</td>
+                <td>F</td>
+                <td>24.04.2004</td>
+                <td><span class="status status-inactive"></span></td>
+                <td>
+                <button class="edit-btn" aria-label="Edit student">
+                    <i class="fa fa-pencil" title="Edit student"></i> 
+                    </button>
+                    <button class="delete-btn" aria-label="Delete student">
+                    <i class="fa fa-remove" title="Delete student"></i>
+                    </button>
+                </td>
+            </tr>
+        </tbody>
+     </table>
+    </fieldset>
+    </div>
+
+    <div class="pagin">
+        <button>&lt;</button>
+        <button class="active">1</button>
+        <button>2</button>
+        <button>3</button>
+        <button>4</button>
+        <button>&gt;</button>
+    </div>
+</div>
+
+   <div id="confirmModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Warning</h3>
+            <span class="close">&times;</span>
+        </div>
+        <hr class="header-divider">
+         <p id="modalText">Are you sure you want to delete user <span id="studentName"></span>?</p>
+        <div class="modal-buttons">
+            <button id="cancelDeleteBtn">Cancel</button>
+            <button id="confirmBtn">OK</button>
+        </div>
+    </div>
+</div>
+
+<div id="studentModal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2>Add student</h2>
+      <span class="close">&times;</span>
+    </div>
+    <hr class="header-divider">
+    <div class="modal-body">
+      <form id="studentForm">
+        <div class="form-group">
+          <label for="group">Group:</label>
+          <div class="input-wrapper">
+          <select id="group" required>
+            <option value="" disabled selected hidden>Select group</option>
+            <option value="PZ-24">PZ-24</option>
+            <option value="PZ-25">PZ-25</option>
+            <option value="PZ-26">PZ-26</option>
+          </select>
+          <span class="error-message"></span>
+          </div>
+        </div>
+        
+        <div class="form-group">
+          <label for="firstName">Name:</label>
+          <div class="input-wrapper">
+          <input type="text" id="firstName" required>
+          <span class="error-message"></span>
+        </div>
+        </div>
+
+        <div class="form-group">
+          <label for="lastName">Surname:</label>
+          <div class="input-wrapper">
+          <input type="text" id="lastName" required>
+          <span class="error-message"></span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="gender">Gender:</label>
+          <div class="input-wrapper">
+          <select id="gender" required>
+            <option value="">Select gender</option>
+            <option value="M">Male</option>
+            <option value="F">Female</option>
+          </select>
+          <span class="error-message"></span>
+        </div>
+        </div>
+
+        <div class="form-group">
+          <label for="birthday">Birthday:</label>
+          <div class="input-wrapper">
+          <input type="date" id="birthday" required>
+          <span class="error-message"></span>
+          </div>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button type="button" id="cancelBtn">Cancel</button>
+      <button type="button" id="createBtn">Create</button>
+    </div>
+  </div>
+</div>
+
+<div id="editStudentModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Edit student</h2>
+        <span class="close edit-close">&times;</span>
+      </div>
+      <hr class="header-divider">
+      <div class="modal-body">
+        <form id="editStudentForm" class="student-form">
+          <div class="form-group">
+            <label for="editGroup">Group:</label>
+            <select id="editGroup" required>
+              <option value="" disabled>Select group</option>
+              <option value="PZ-24">PZ-24</option>
+              <option value="PZ-25">PZ-25</option>
+              <option value="PZ-26">PZ-26</option>
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label for="editFirstName">Name:</label>
+            <input type="text" id="editFirstName" required>
+            <span class="error-message"></span>
+          </div>
+          
+          <div class="form-group">
+            <label for="editLastName">Surname:</label>
+            <input type="text" id="editLastName" required>
+            <span class="error-message"></span>
+          </div>
+          
+          <div class="form-group">
+            <label for="editGender">Gender:</label>
+            <select id="editGender" required>
+              <option value="" disabled>Select gender</option>
+              <option value="M">Male</option>
+              <option value="F">Female</option>
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label for="editBirthday">Birthday:</label>
+            <input type="date" id="editBirthday" required>
+            <span class="error-message"></span>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" id="editCancelBtn">Cancel</button>
+        <button type="button" id="editSaveBtn">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="confirmDeleteAllModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Warning</h3>
+            <span class="close">&times;</span>
+        </div>
+        <hr class="header-divider">
+        <p id="confirmDeleteAllText">Are you sure you want to delete all students?</p>
+        <div class="modal-buttons">
+            <button id="cancelDeleteAllBtn">Cancel</button>
+            <button id="confirmDeleteAllBtn">OK</button>
+        </div>
+    </div>
+</div>
+</main>
+<script src="script.js"></script>
+</body>
+</html>
