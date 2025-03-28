@@ -1,3 +1,9 @@
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("sw.js")
+    .then(reg => console.log("✅ Service Worker зареєстровано", reg))
+    .catch(err => console.error("❌ SW помилка", err));
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   const confirmModal = document.getElementById('confirmModal');
   const studentNameSpan = document.getElementById('studentName');
