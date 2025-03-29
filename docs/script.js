@@ -7,34 +7,66 @@ if ("serviceWorker" in navigator) {
 document.addEventListener('DOMContentLoaded', () => {
   const confirmModal = document.getElementById('confirmModal');
   const studentNameSpan = document.getElementById('studentName');
-  let studentToDelete = null;
+  let studentToDeleteId = null;
+  let rowToEdit = null;
 
-  document.querySelector('#studentsTable').addEventListener('click', (e) => {
+document.querySelector('#studentsTable').addEventListener('click', (e) => {
     const deleteButton = e.target.closest('.delete-btn');
-     if (deleteButton) {
-          const row = e.target.closest('tr');
-          const studentName = row.querySelector('td:nth-child(3)').textContent;
-          studentNameSpan.textContent = studentName;
-          studentToDelete = row;
-          confirmModal.style.display = 'block';
-      }
-  });
+    if (deleteButton) {
+        const row = deleteButton.closest('tr');
+        const studentId = row.dataset.id;
+        const studentName = row.querySelector('td:nth-child(3)').textContent;
 
-  document.querySelector('.close').addEventListener('click', () => {
-      confirmModal.style.display = 'none';
-  });
+        studentNameSpan.textContent = studentName;
+        studentToDeleteId = studentId;
+        confirmModal.style.display = 'block';
+        return;
+    }
 
-  document.getElementById('cancelDeleteBtn').addEventListener('click', () => {
-    confirmModal.style.display = 'none';
-  });
+    const editButton = e.target.closest('.edit-btn');
+    if (editButton) {
+      const row = editButton.closest('tr');
+      rowToEdit = row;
 
-  document.getElementById('confirmBtn').addEventListener('click', () => {
-      if(studentToDelete) {
-          studentToDelete.remove();
-          studentToDelete = null;
-          confirmModal.style.display = 'none';
-      }
-  });
+      const studentId = row.getAttribute('data-id');
+      const group = row.cells[1].textContent.trim();
+      const fullName = row.cells[2].textContent.trim();
+      let [firstName, lastName] = fullName.split(' ');
+      const gender = row.cells[3].textContent.trim();
+      const birthdayText = row.cells[4].textContent.trim(); 
+
+    const parts = birthdayText.split('.');
+    let isoDate = "";
+    if (parts.length === 3) {
+      isoDate = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+    }
+
+    document.getElementById('editStudentId').value = studentId;
+    document.getElementById('editGroup').value = group;
+    document.getElementById('editFirstName').value = firstName;
+    document.getElementById('editLastName').value = lastName;
+    document.getElementById('editGender').value = gender;
+    document.getElementById('editBirthday').value = isoDate;
+
+    document.getElementById('editStudentModal').style.display = 'block';
+  }
+});
+
+const closeModal = () => {
+  confirmModal.style.display = 'none';
+  studentToDeleteId = null;
+};
+
+document.querySelector('.close').addEventListener('click', closeModal);
+document.getElementById('cancelDeleteBtn').addEventListener('click', closeModal);
+
+document.getElementById('confirmBtn').addEventListener('click', () => {
+  if (studentToDeleteId) {
+      const row = document.querySelector(`tr[data-id="${studentToDeleteId}"]`);
+      if (row) row.remove();
+      closeModal();
+  }
+});
 
 const studentModal = document.getElementById('studentModal');
 const addBtn = document.getElementById('addStudentBtn');
@@ -91,6 +123,10 @@ fields.forEach(({ id, pattern, patternMessage, validateDate }) => {
   });
 });
 
+function generateUniqueId() {
+  return Date.now() + '-' + Math.floor(Math.random() * 1000);
+}
+
 createBtn.addEventListener('click', () => {
   let isFormValid = true;
 
@@ -117,13 +153,14 @@ createBtn.addEventListener('click', () => {
   });
 
   if (isFormValid) {
+    const studentId = generateUniqueId();
     const group = document.getElementById('group').value;
     const firstName = document.getElementById('firstName').value;
     const lastName = document.getElementById('lastName').value;
     const gender = document.getElementById('gender').value;
     const birthday = document.getElementById('birthday').value;
 
-    addStudentToTable(group, firstName, lastName, gender, birthday);
+    addStudentToTable(studentId, group, firstName, lastName, gender, birthday);
 
     studentModal.style.display = 'none';
     studentForm.reset();
@@ -131,17 +168,25 @@ createBtn.addEventListener('click', () => {
   }
 });
 
-
-  function addStudentToTable(group, firstName, lastName, gender, birthday) {
+  function addStudentToTable(studentId, group, firstName, lastName, gender, birthday) {
     const tbody = document.querySelector('#studentsTable tbody');
     const newRow = document.createElement('tr');
+
+    const dateObj = new Date(birthday);
+    const day = String(dateObj.getDate()).padStart(2, '0');
+    const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+    const year = dateObj.getFullYear();
+    const formattedBirthday = `${day}.${month}.${year}`;
     
+    newRow.setAttribute('data-id', studentId);
     newRow.innerHTML = `
-      <td><input type="checkbox" class="student-checkbox" aria-label="checkbox"/></td>
+      <td><input type="checkbox" id="student-${studentId}" class="student-checkbox" aria-label="Select ${firstName} ${lastName}"
+             title="Student ID: ${studentId}"/>
+      <label for="student-${studentId}" class="visually-hidden">Select ${firstName} ${lastName}</label></td>
       <td>${group}</td>
       <td>${firstName} ${lastName}</td>
       <td>${gender}</td>
-      <td>${new Date(birthday).toLocaleDateString()}</td>
+      <td>${formattedBirthday}</td>
       <td><span class="status status-inactive"></span></td>
       <td>
         <button class="edit-btn" aria-label="Edit student">
@@ -154,7 +199,7 @@ createBtn.addEventListener('click', () => {
     `;
   
     tbody.appendChild(newRow);
-    
+    newRow.querySelector('input[type="checkbox"]').addEventListener('change', updateSelectAllCheckbox);
   }
 
   function clearAllErrors() {
@@ -175,35 +220,6 @@ createBtn.addEventListener('click', () => {
       clearAllErrors();
     }
   });
-
-let rowToEdit = null;
-
-document.querySelector('#studentsTable').addEventListener('click', (e) => {
-  if (e.target.closest('.edit-btn')) {
-    const row = e.target.closest('tr');
-    rowToEdit = row;
-
-    const group = row.cells[1].textContent.trim();
-    const fullName = row.cells[2].textContent.trim();
-    let [firstName, lastName] = fullName.split(' ');
-    const gender = row.cells[3].textContent.trim();
-    const birthdayText = row.cells[4].textContent.trim(); 
-
-    const parts = birthdayText.split('.');
-    let isoDate = "";
-    if (parts.length === 3) {
-      isoDate = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
-    }
-
-    document.getElementById('editGroup').value = group;
-    document.getElementById('editFirstName').value = firstName;
-    document.getElementById('editLastName').value = lastName;
-    document.getElementById('editGender').value = gender;
-    document.getElementById('editBirthday').value = isoDate;
-
-    document.getElementById('editStudentModal').style.display = 'block';
-  }
-});
 
 const Editfields = [
   { id: 'editFirstName', message: 'Please enter first name', pattern: /^[A-Za-zА-Яа-яІіЇїЄєҐґ]+$/, patternMessage: 'Only letters allowed' },
@@ -262,6 +278,7 @@ document.getElementById('editSaveBtn').addEventListener('click', () => {
   });
 
   if (isFormValid) {
+    const studentId = document.getElementById('editStudentId').value;
     const group = document.getElementById('editGroup').value;
     const firstName = document.getElementById('editFirstName').value.trim();
     const lastName = document.getElementById('editLastName').value.trim();
@@ -279,12 +296,22 @@ document.getElementById('editSaveBtn').addEventListener('click', () => {
     rowToEdit.cells[3].textContent = gender;
     rowToEdit.cells[4].textContent = formattedBirthday;
 
+    const studentData = {
+      studentId,
+      group,
+      firstName,
+      lastName,
+      gender,
+      birthday: formattedBirthday,
+    };
+
+    console.log('Updated Student Data:', JSON.stringify(studentData));
+
     document.getElementById('editStudentModal').style.display = 'none';
     document.getElementById('editStudentForm').reset();
     rowToEdit = null;
   }
 });
-
 
 document.getElementById('editCancelBtn').addEventListener('click', () => {
   document.getElementById('editStudentModal').style.display = 'none';
@@ -330,6 +357,16 @@ window.addEventListener('click', (e) => {
       chk.checked = selectAllCheckbox.checked;
     });
   });
+  
+  function updateSelectAllCheckbox() {
+    const studentCheckboxes = document.querySelectorAll('#studentsTable tbody input[type="checkbox"]');
+    const allChecked = Array.from(studentCheckboxes).every(chk => chk.checked);
+    selectAllCheckbox.checked = allChecked;
+  }
+  
+  document.querySelectorAll('#studentsTable tbody input[type="checkbox"]').forEach(chk => {
+    chk.addEventListener('change', updateSelectAllCheckbox);
+  });
 
   const confirmDeleteAllModal = document.getElementById('confirmDeleteAllModal');
   const confirmDeleteAllText = document.getElementById('confirmDeleteAllText');
@@ -353,7 +390,8 @@ window.addEventListener('click', (e) => {
       confirmDeleteAllText.textContent = `Are you sure you want to delete selected student (${checkedCheckboxes.length})?`;
     }
 
-    rowsToDelete = checkedCheckboxes.map(chk => chk.closest('tr'));
+    const idsToDelete = checkedCheckboxes.map(chk => chk.closest('tr').dataset.id);
+    rowsToDelete = idsToDelete;
     confirmDeleteAllModal.style.display = 'block';
   });
 
@@ -363,7 +401,12 @@ window.addEventListener('click', (e) => {
   });
 
   confirmDeleteAllBtn.addEventListener('click', () => {
-    rowsToDelete.forEach(row => row.remove());
+    rowsToDelete.forEach(id => {
+      const row = document.querySelector(`tr[data-id="${id}"]`);
+      if (row) {
+        row.remove();
+      }
+    });
     rowsToDelete = [];
     confirmDeleteAllModal.style.display = 'none';
     document.getElementById('selectAll').checked = false;

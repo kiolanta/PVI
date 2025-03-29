@@ -95,7 +95,7 @@
             </tr>
         </thead>
         <tbody>
-            <tr>
+            <tr data-id="1234">
                 <td><label for="student1" class="visually-hidden">Select Iolanta Kolchyntseva</label>
                     <input type="checkbox" id="student1" name="student"></td>
                 <td>PZ-26</td>
@@ -112,11 +112,11 @@
                     </button>
                 </td>
             </tr>
-            <tr>
-                <td> <label for="student2" class="visually-hidden">Select Ann Bond</label>
+            <tr data-id="4567">
+                <td> <label for="student2" class="visually-hidden">Select Anna Bond</label>
                     <input type="checkbox" id="student2" name="student"></td>
                 <td>PZ-24</td>
-                <td>Ann Bond</td>
+                <td>Anna Bond</td>
                 <td>F</td>
                 <td>24.04.2004</td>
                 <td><span class="status status-inactive"></span></td>
@@ -234,6 +234,7 @@
       <hr class="header-divider">
       <div class="modal-body">
         <form id="editStudentForm" class="student-form">
+          <input type="hidden" id="editStudentId">
           <div class="form-group">
             <label for="editGroup">Group:</label>
             <select id="editGroup" required>
