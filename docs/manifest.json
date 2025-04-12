@@ -2,7 +2,7 @@
     "name": "LPNU",
     "short_name": "LPNU",
     "description": "Students Management",
-    "start_url": "./student.html",
+    "start_url": "/views/student.html",
     "display": "standalone",
     "background_color": "#ffffff",
     "theme_color": "#ffffff",

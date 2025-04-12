@@ -1,15 +1,18 @@
 const CACHE_NAME = "v1";
 const urlsToCache = [
   "/",
-  "student.html",
-  "/dashboard.html",
-  "/tasks.html",
-  "/profile.html",
-  "/messages.html",
+  "/views/student.html",
+  "/views/dashboard.html",
+  "/views/tasks.html",
+  "/views/profile.html",
+  "/views/messages.html",
   "/student.css",
   "/task.css",
   "/messages.css",
   "/script.js",
+  "/student.js",
+  "/task.js",
+  "/dashboard.js",
   "/manifest.json",
   "/icons/web-app-manifest-192x192.png",
   "/icons/web-app-manifest-512x512.png"
@@ -34,13 +37,20 @@ self.addEventListener("install", event => {
 });
 
 self.addEventListener("fetch", (event) => {
+  if (
+    event.request.url.includes(".php") ||
+    event.request.url.includes("index.php") ||
+    event.request.method !== "GET"
+  ) {
+    return;
+  }
   event.respondWith(
     caches.open(CACHE_NAME).then((cache) => {
       return cache.match(event.request).then((cachedResponse) => {
         const networkFetch = fetch(event.request).then((networkResponse) => {
           cache.put(event.request, networkResponse.clone());
           return networkResponse;
-        });
+        }).catch(() => cachedResponse);
         return cachedResponse || networkFetch;
       });
     })

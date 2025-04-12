@@ -607,6 +607,26 @@ select.error {
     transform: scale(1.1);
 }
 
+#submitLoginBtn{
+    background-color: rgb(145, 205, 245);
+    transition: transform 0.2s ease, font-weight 0.2s ease;
+}
+
+#submitLoginBtn:hover{
+    font-weight: bold;
+    transform: scale(1.1)
+}
+
+#cancelLoginBtn{
+    background-color: #d381aa;
+    transition: transform 0.2s ease, font-weight 0.2s ease;
+}
+
+#cancelLoginBtn:hover{
+    font-weight: bold;
+    transform: scale(1.1);
+}
+
 @media (max-width: 1024px) {
     .sideburger { 
         width: 200px;
@@ -623,7 +643,6 @@ select.error {
         flex-direction: column;
         gap: 10px;
     }
-
 }
 
 @media screen and (max-width: 860px) {
@@ -711,37 +730,36 @@ select.error {
     .notification-dropdown {
         min-width: 150px; 
         padding: 5px; 
-      }
-    
-      .notification-item {
+    }
+
+    .notification-item {
         gap: 5px;
         padding: 5px;
-      }
-    
-      .notification-item img {
+    }
+
+    .notification-item img {
         height: 28px; 
-      }
-    
-      .message {
+    }
+
+    .message {
         font-size: 12px;
         padding: 5px 12px;
-      }
+    }
 
-      .profile-header {
+    .profile-header {
         min-width: 120px;
         padding: 8px; 
-      }
-    
-      .profile-header a {
+    }
+
+    .profile-header a {
         font-size: 14px;
-      }
-    
-      .profile-header button {
+    }
+
+    .profile-header button {
         padding: 8px; 
         font-size: 14px; 
         margin-top: 5px; 
-      }
-
+    }
 }
  
 @media screen and (max-width: 480px) {
@@ -755,34 +773,31 @@ select.error {
     .notification-dropdown {
         max-width: 250px; 
         padding: 3px;
-      }
+    }
     
-      .notification-item {
+    .notification-item {
         gap: 3px;
         padding: 3px;
-      }
-
+    }
 }
 
 @media screen and (max-width: 320px){
     .notification-dropdown {
         max-width: 200px; 
-      }
+    }
 
-      .profile-header {
+    .profile-header {
         min-width: 100px;
         padding: 8px; 
-      }
-    
-      .profile-header a {
+    }
+
+    .profile-header a {
         font-size: 12px;
-      }
-    
-      .profile-header button {
+    }
+
+    .profile-header button {
         padding: 8px; 
         font-size: 12px; 
         margin-top: 5px; 
-      }
-
+    }
 }
-
