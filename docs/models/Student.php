@@ -1,4 +1,6 @@
 <?php
+require_once __DIR__ . '/../db.php';
+
 class Student
 {
     private $pdo;
@@ -21,5 +23,22 @@ class Student
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
+    public function add($group, $name, $gender, $birthday)
+    {
+        
+        $dateObj = new DateTime($birthday);
+        $password = $dateObj->format('dmy'); 
     
+        $stmt = $this->pdo->prepare("INSERT INTO students (`group`, name, gender, birthday, password) VALUES (?, ?, ?, ?, ?)");
+        $stmt->execute([$group, $name, $gender, $birthday, $password]);
+    
+        return $this->pdo->lastInsertId();
+    }
+    
+    public function exists($name, $birthday)
+    {
+        $stmt = $this->pdo->prepare("SELECT id FROM students WHERE name = ? AND birthday = ?");
+        $stmt->execute([$name, $birthday]);
+        return $stmt->rowCount() > 0;
+    }
 }

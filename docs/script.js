@@ -11,7 +11,26 @@ const notificationHeader = document.querySelector(".notification-header");
 
 openLoginBtn.textContent = 'Log In';
 openLoginBtn.id = 'loginBtn';
+
+openLoginBtn.style.padding = '10px 20px';
+openLoginBtn.style.borderRadius = '20px';
+openLoginBtn.style.border = 'none';
+openLoginBtn.style.backgroundColor = 'rgb(178, 214, 238)'; 
+openLoginBtn.style.color = 'black';
+openLoginBtn.style.fontSize = '16px';
+openLoginBtn.style.cursor = 'pointer';
+openLoginBtn.style.transition = 'all 0.3s ease'; 
 openLoginBtn.style.marginRight = '20px';
+
+openLoginBtn.addEventListener('mouseenter', () => {
+  openLoginBtn.style.backgroundColor = 'rgb(193, 178, 238)'; 
+  openLoginBtn.style.transform = 'scale(1.05)';
+});
+
+openLoginBtn.addEventListener('mouseleave', () => {
+  openLoginBtn.style.backgroundColor = 'rgb(178, 214, 238)';
+  openLoginBtn.style.transform = 'scale(1)';
+});
 
 const header = document.querySelector('.user-info');
 const user = JSON.parse(localStorage.getItem('user'));

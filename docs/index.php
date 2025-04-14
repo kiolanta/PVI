@@ -7,7 +7,11 @@ switch ($request) {
     case 'students':
         require 'controllers/StudentController.php';
         $controller = new StudentController();
-        $controller->getStudents();
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $controller->createStudent();
+        } else {
+            $controller->getStudents();
+        }
         break;
     case 'login':
         require 'controllers/AuthController.php';

@@ -166,16 +166,45 @@ document.addEventListener('DOMContentLoaded', () => {
       const lastName = document.getElementById('lastName').value;
       const gender = document.getElementById('gender').value;
       const birthday = document.getElementById('birthday').value;
-  
-      addStudentToTable(studentId, group, firstName, lastName, gender, birthday);
-  
-      studentModal.style.display = 'none';
-      studentForm.reset();
-      clearAllErrors();
+      
+      fetch('index.php?route=students', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          group,
+          firstName,
+          lastName,
+          gender,
+          birthday
+        })
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          const student = data.student;
+          addStudentToTable(student.id, student.group, student.name, student.gender, student.birthday);
+          studentModal.style.display = 'none';
+          studentForm.reset();
+          clearAllErrors();
+        } else {
+          Object.entries(data.errors).forEach(([key, msg]) => {
+            const input = document.getElementById(key);
+            const errorMsg = input?.parentElement?.querySelector('.error-message');
+            if (input) {
+              input.classList.add('error');
+              if (errorMsg) errorMsg.textContent = msg;
+            } else {
+              alert(msg); // для дубліката
+            }
+          });
+        }
+      });
     }
   });
   
-    function addStudentToTable(studentId, group, firstName, lastName, gender, birthday) {
+    function addStudentToTable(studentId, group, name, gender, birthday) {
       const tbody = document.querySelector('#studentsTable tbody');
       const newRow = document.createElement('tr');
   
@@ -191,7 +220,7 @@ document.addEventListener('DOMContentLoaded', () => {
                title="Student ID: ${studentId}"/>
         <label for="student-${studentId}" class="visually-hidden">Select ${firstName} ${lastName}</label></td>
         <td>${group}</td>
-        <td>${firstName} ${lastName}</td>
+        <td>${name}</td>
         <td>${gender}</td>
         <td>${formattedBirthday}</td>
         <td><span class="status status-inactive"></span></td>
@@ -433,8 +462,8 @@ document.addEventListener('DOMContentLoaded', () => {
           if (!res.ok) throw new Error("Unauthorized");
           return res.json();
         })
-        .then(response => { // Змінено змінну з 'students' на 'response'
-          renderStudentsToTable(response.data); // Використовуємо response.data
+        .then(response => { 
+          renderStudentsToTable(response.data); 
         })
         .catch(err => {
           console.warn("Помилка завантаження студентів:", err.message);
