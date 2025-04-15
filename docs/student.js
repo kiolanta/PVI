@@ -183,8 +183,14 @@ document.addEventListener('DOMContentLoaded', () => {
       .then(response => response.json())
       .then(data => {
         if (data.success) {
-          const student = data.student;
-          addStudentToTable(student.id, student.group, student.name, student.gender, student.birthday);
+          fetch('index.php?route=students&countOnly=true')
+            .then(res => res.json())
+            .then(data => {
+              const total = data.total; 
+              const studentsPerPage = 5;
+              const lastPage = Math.ceil(total / studentsPerPage);
+              fetchStudentsFromServer(lastPage); 
+            });
           studentModal.style.display = 'none';
           studentForm.reset();
           clearAllErrors();
@@ -196,7 +202,7 @@ document.addEventListener('DOMContentLoaded', () => {
               input.classList.add('error');
               if (errorMsg) errorMsg.textContent = msg;
             } else {
-              alert(msg); // для дубліката
+              alert(msg); 
             }
           });
         }
@@ -204,39 +210,42 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
   
-    function addStudentToTable(studentId, group, name, gender, birthday) {
-      const tbody = document.querySelector('#studentsTable tbody');
-      const newRow = document.createElement('tr');
+  function addStudentToTable(studentId, group, name, gender, birthday, status = 'offline') {
+    const tbody = document.querySelector('#studentsTable tbody');
+    const newRow = document.createElement('tr');
   
-      const dateObj = new Date(birthday);
-      const day = String(dateObj.getDate()).padStart(2, '0');
-      const month = String(dateObj.getMonth() + 1).padStart(2, '0');
-      const year = dateObj.getFullYear();
-      const formattedBirthday = `${day}.${month}.${year}`;
-      
-      newRow.setAttribute('data-id', studentId);
-      newRow.innerHTML = `
-        <td><input type="checkbox" id="student-${studentId}" class="student-checkbox" aria-label="Select ${firstName} ${lastName}"
-               title="Student ID: ${studentId}"/>
-        <label for="student-${studentId}" class="visually-hidden">Select ${firstName} ${lastName}</label></td>
-        <td>${group}</td>
-        <td>${name}</td>
-        <td>${gender}</td>
-        <td>${formattedBirthday}</td>
-        <td><span class="status status-inactive"></span></td>
-        <td>
-          <button class="edit-btn" aria-label="Edit student">
-            <i class="fa fa-pencil" title="Edit student"></i>
-          </button>
-          <button class="delete-btn" aria-label="Delete student">
-            <i class="fa fa-remove" title="Delete student"></i>
-          </button>
-        </td>
-      `;
-    
-      tbody.appendChild(newRow);
-      newRow.querySelector('input[type="checkbox"]').addEventListener('change', updateSelectAllCheckbox);
-    }
+    const dateObj = new Date(birthday);
+    const day = String(dateObj.getDate()).padStart(2, '0');
+    const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+    const year = dateObj.getFullYear();
+    const formattedBirthday = `${day}.${month}.${year}`;
+  
+    const statusClass = status === 'online' ? 'status-active' : 'status-inactive';
+  
+    newRow.setAttribute('data-id', studentId);
+    newRow.innerHTML = `
+      <td><input type="checkbox" id="student-${studentId}" class="student-checkbox" aria-label="Select ${name}"
+             title="Student ID: ${studentId}"/>
+      <label for="student-${studentId}" class="visually-hidden">Select ${name}</label></td>
+      <td>${group}</td>
+      <td>${name}</td>
+      <td>${gender}</td>
+      <td>${formattedBirthday}</td>
+      <td><span class="status ${statusClass}"></span></td>
+      <td>
+        <button class="edit-btn" aria-label="Edit student">
+          <i class="fa fa-pencil" title="Edit student"></i>
+        </button>
+        <button class="delete-btn" aria-label="Delete student">
+          <i class="fa fa-remove" title="Delete student"></i>
+        </button>
+      </td>
+    `;
+  
+    tbody.appendChild(newRow);
+    newRow.querySelector('input[type="checkbox"]').addEventListener('change', updateSelectAllCheckbox);
+  }
+  
   
     function clearAllErrors() {
         document.querySelectorAll('.error').forEach(el => el.classList.remove('error'));
@@ -451,10 +460,10 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
   
-    fetchStudentsFromServer();
-      
-    function fetchStudentsFromServer() {
-      fetch('index.php?route=students', {
+    fetchStudentsFromServer(1);
+  
+    function fetchStudentsFromServer(page = 1) {
+      fetch(`index.php?route=students&page=${page}`, {
         method: 'GET',
         credentials: 'include'
       })
@@ -463,12 +472,40 @@ document.addEventListener('DOMContentLoaded', () => {
           return res.json();
         })
         .then(response => { 
-          renderStudentsToTable(response.data); 
+          renderStudentsToTable(response.data);
+          renderPagination(response.totalPages, response.currentPage);
         })
         .catch(err => {
           console.warn("Помилка завантаження студентів:", err.message);
         });
     }
+  
+
+    function renderPagination(totalPages, currentPage) {
+      const paginContainer = document.getElementById('pagination');
+      paginContainer.innerHTML = '';
+    
+      const createPageButton = (label, page, isActive = false) => {
+        const btn = document.createElement('button');
+        btn.textContent = label;
+        if (isActive) btn.classList.add('active');
+        btn.addEventListener('click', () => {
+          if (page >= 1 && page <= totalPages) {
+            fetchStudentsFromServer(page);
+          }
+        });
+        return btn;
+      };
+    
+      paginContainer.appendChild(createPageButton('<', currentPage - 1));
+    
+      for (let i = 1; i <= totalPages; i++) {
+        paginContainer.appendChild(createPageButton(i, i, i === currentPage));
+      }
+    
+      paginContainer.appendChild(createPageButton('>', currentPage + 1));
+    }
+    
     
     function renderStudentsToTable(students) {
         const tbody = document.querySelector('#studentsTable tbody');
@@ -484,6 +521,8 @@ document.addEventListener('DOMContentLoaded', () => {
           const year = birthday.getFullYear();
           const formattedBirthday = `${day}.${month}.${year}`;
     
+          const statusClass = student.status === 'online' ? 'status-active' : 'status-inactive';
+          
           row.innerHTML = `
             <td>
               <input type="checkbox" id="student-${student.id}" class="student-checkbox" aria-label="Select ${student.name}" title="Student ID: ${student.id}" />
@@ -493,7 +532,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <td>${student.name}</td>
             <td>${student.gender}</td>
             <td>${formattedBirthday}</td>
-            <td><span class="status status-inactive"></span></td>
+            <td><span class="status ${statusClass}"></span></td>
             <td>
               <button class="edit-btn" aria-label="Edit student"><i class="fa fa-pencil" title="Edit student"></i></button>
               <button class="delete-btn" aria-label="Delete student"><i class="fa fa-remove" title="Delete student"></i></button>
@@ -510,5 +549,4 @@ document.addEventListener('DOMContentLoaded', () => {
     
         updateSelectAllCheckbox();
     }
-    
 });

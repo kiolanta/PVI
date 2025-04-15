@@ -10,15 +10,34 @@ class StudentController
         global $pdo;
 
         try {
-            $studentModel = new Student($pdo); 
-            $students = $studentModel->getAll();
-            echo json_encode(['data' => $students]);
+            if (isset($_GET['countOnly']) && $_GET['countOnly'] === 'true') {
+                $stmt = $pdo->query("SELECT COUNT(*) FROM students");
+                $total = $stmt->fetchColumn();
+                echo json_encode(['total' => (int)$total]);
+                return;
+            }
+
+            $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+            $limit = 5;
+            $offset = ($page - 1) * $limit;
+
+            $studentModel = new Student($pdo);
+            $students = $studentModel->getPaginated($limit, $offset);
+            $total = $studentModel->countAll();
+            $totalPages = ceil($total / $limit);
+
+            echo json_encode([
+                'data' => $students,
+                'totalPages' => $totalPages,
+                'currentPage' => $page
+            ]);
         } catch (Exception $e) {
             http_response_code(500);
             echo json_encode(['error' => $e->getMessage()]);
         }
     }
 
+    
     public function createStudent()
     {
         header('Content-Type: application/json');
@@ -60,8 +79,9 @@ class StudentController
                 'group' => $group,
                 'name' => $name,
                 'gender' => $gender,
-                'birthday' => $birthday
+                'birthday' => $birthday,
+                'status' => 'offline'
             ]
-        ]);
+        ]);        
     }
 }

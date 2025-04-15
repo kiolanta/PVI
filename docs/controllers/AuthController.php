@@ -24,6 +24,8 @@ class AuthController
                 'name' => $student['name'],
                 'group' => $student['group']
             ];
+            $updateStatus = $pdo->prepare("UPDATE students SET status = 'online' WHERE id = ?");
+            $updateStatus->execute([$student['id']]);
             echo json_encode(['status' => 'success', 'user' => $_SESSION['user']]);
         } else {
             http_response_code(401);
@@ -34,6 +36,13 @@ class AuthController
     public function logout()
     {
         session_start();
+        require_once 'db.php';
+
+        if (isset($_SESSION['user']['id'])) {
+            $userId = $_SESSION['user']['id'];
+            $updateStatus = $pdo->prepare("UPDATE students SET status = 'offline' WHERE id = ?");
+            $updateStatus->execute([$userId]);
+        }
         session_destroy();
         echo json_encode(['status' => 'success']);
     }

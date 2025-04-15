@@ -29,8 +29,9 @@ class Student
         $dateObj = new DateTime($birthday);
         $password = $dateObj->format('dmy'); 
     
-        $stmt = $this->pdo->prepare("INSERT INTO students (`group`, name, gender, birthday, password) VALUES (?, ?, ?, ?, ?)");
+        $stmt = $this->pdo->prepare("INSERT INTO students (`group`, name, gender, birthday, password, status) VALUES (?, ?, ?, ?, ?, 'offline')");
         $stmt->execute([$group, $name, $gender, $birthday, $password]);
+
     
         return $this->pdo->lastInsertId();
     }
@@ -40,5 +41,20 @@ class Student
         $stmt = $this->pdo->prepare("SELECT id FROM students WHERE name = ? AND birthday = ?");
         $stmt->execute([$name, $birthday]);
         return $stmt->rowCount() > 0;
+    }
+
+    public function getPaginated($limit, $offset)
+    {
+        $stmt = $this->pdo->prepare("SELECT * FROM students LIMIT :limit OFFSET :offset");
+        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+        $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function countAll()
+    {
+        $stmt = $this->pdo->query("SELECT COUNT(*) FROM students");
+        return $stmt->fetchColumn();
     }
 }
