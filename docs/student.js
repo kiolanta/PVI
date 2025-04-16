@@ -4,70 +4,96 @@ document.addEventListener('DOMContentLoaded', () => {
     let studentToDeleteId = null;
     let rowToEdit = null;
   
-  document.querySelector('#studentsTable').addEventListener('click', (e) => {
-        const currentUser = JSON.parse(localStorage.getItem('user'));
-            if (!currentUser) {
-            e.preventDefault();
-            alert("🔒 Будь ласка, авторизуйтеся для подальших дій.");
-            return;
-        }
+    document.querySelector('#studentsTable').addEventListener('click', (e) => {
+          const currentUser = JSON.parse(localStorage.getItem('user'));
+              if (!currentUser) {
+              e.preventDefault();
+              alert("🔒 Будь ласка, авторизуйтеся для подальших дій.");
+              return;
+          }
 
-      const deleteButton = e.target.closest('.delete-btn');
-      if (deleteButton) {
-          const row = deleteButton.closest('tr');
-          const studentId = row.dataset.id;
-          const studentName = row.querySelector('td:nth-child(3)').textContent;
-  
-          studentNameSpan.textContent = studentName;
-          studentToDeleteId = studentId;
-          confirmModal.style.display = 'block';
-          return;
-        }
-  
-      const editButton = e.target.closest('.edit-btn');
-      if (editButton) {
-            const row = editButton.closest('tr');
-            rowToEdit = row;
-    
-            const studentId = row.getAttribute('data-id');
-            const group = row.cells[1].textContent.trim();
-            const fullName = row.cells[2].textContent.trim();
-            let [firstName, lastName] = fullName.split(' ');
-            const gender = row.cells[3].textContent.trim();
-            const birthdayText = row.cells[4].textContent.trim(); 
-    
-            const parts = birthdayText.split('.');
-            let isoDate = "";
-            if (parts.length === 3) {
-                isoDate = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+          const deleteButton = e.target.closest('.delete-btn');
+          if (deleteButton) {
+              const row = deleteButton.closest('tr');
+              const studentId = row.dataset.id;
+              const studentName = row.querySelector('td:nth-child(3)').textContent;
+      
+              studentNameSpan.textContent = studentName;
+              studentToDeleteId = studentId;
+              confirmModal.style.display = 'block';
+              return;
             }
-    
-            document.getElementById('editStudentId').value = studentId;
-            document.getElementById('editGroup').value = group;
-            document.getElementById('editFirstName').value = firstName;
-            document.getElementById('editLastName').value = lastName;
-            document.getElementById('editGender').value = gender;
-            document.getElementById('editBirthday').value = isoDate;
+      
+          const editButton = e.target.closest('.edit-btn');
+          if (editButton) {
+                const row = editButton.closest('tr');
+                rowToEdit = row;
         
-            document.getElementById('editStudentModal').style.display = 'block';
-        }
+                const studentId = row.getAttribute('data-id');
+                const group = row.cells[1].textContent.trim();
+                const fullName = row.cells[2].textContent.trim();
+                let [firstName, lastName] = fullName.split(' ');
+                const gender = row.cells[3].textContent.trim();
+                const birthdayText = row.cells[4].textContent.trim(); 
+        
+                const parts = birthdayText.split('.');
+                let isoDate = "";
+                if (parts.length === 3) {
+                    isoDate = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+                }
+        
+                document.getElementById('editStudentId').value = studentId;
+                document.getElementById('editGroup').value = group;
+                document.getElementById('editFirstName').value = firstName;
+                document.getElementById('editLastName').value = lastName;
+                document.getElementById('editGender').value = gender;
+                document.getElementById('editBirthday').value = isoDate;
+            
+                document.getElementById('editStudentModal').style.display = 'block';
+            }
+      });
+  
+    const closeModal = () => {
+      confirmModal.style.display = 'none';
+      studentToDeleteId = null;
+    };
+    
+    document.querySelector('.close').addEventListener('click', closeModal);
+    document.getElementById('cancelDeleteBtn').addEventListener('click', closeModal);
+    
+    document.getElementById('confirmBtn').addEventListener('click', () => {
+      if (studentToDeleteId) {
+        fetch('index.php?route=delete_student', {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ id: studentToDeleteId }),
+          credentials: 'include'
+        })
+          .then(res => res.json())
+          .then(response => {
+            if (response.success) {
+              const row = document.querySelector(`tr[data-id="${studentToDeleteId}"]`);
+              if (row) {
+                row.classList.add('fade-out');  
+                row.addEventListener('animationend', () => {
+                    row.remove();
+                });
+              }
+            closeModal();
+            } else {
+              alert('❌ Помилка при видаленні студента з бази.');
+              console.warn(response.error || 'Unknown error');
+            }
+          })
+          .catch(err => {
+            alert('⚠️ Сталася помилка при запиті на видалення.');
+            console.error(err);
+          });
+      }
     });
   
-  const closeModal = () => {
-    confirmModal.style.display = 'none';
-    studentToDeleteId = null;
-  };
-  
-  document.querySelector('.close').addEventListener('click', closeModal);
-  document.getElementById('cancelDeleteBtn').addEventListener('click', closeModal);
-  
-  document.getElementById('confirmBtn').addEventListener('click', () => {
-    if (studentToDeleteId) {
-        const row = document.querySelector(`tr[data-id="${studentToDeleteId}"]`);
-        if (row) row.remove();
-        closeModal();
-    }
-  });
   
   const studentModal = document.getElementById('studentModal');
   const addBtn = document.getElementById('addStudentBtn');
@@ -130,10 +156,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
   
-  function generateUniqueId() {
-        return Date.now() + '-' + Math.floor(Math.random() * 1000);
-  }
-  
   createBtn.addEventListener('click', () => {
     let isFormValid = true;
   
@@ -160,7 +182,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   
     if (isFormValid) {
-      const studentId = generateUniqueId();
       const group = document.getElementById('group').value;
       const firstName = document.getElementById('firstName').value;
       const lastName = document.getElementById('lastName').value;
@@ -210,7 +231,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
   
-  function addStudentToTable(studentId, group, name, gender, birthday, status = 'offline') {
+  /*function addStudentToTable(studentId, group, name, gender, birthday, status = 'offline') {
     const tbody = document.querySelector('#studentsTable tbody');
     const newRow = document.createElement('tr');
   
@@ -244,7 +265,7 @@ document.addEventListener('DOMContentLoaded', () => {
   
     tbody.appendChild(newRow);
     newRow.querySelector('input[type="checkbox"]').addEventListener('change', updateSelectAllCheckbox);
-  }
+  }*/
   
   
     function clearAllErrors() {
@@ -437,15 +458,38 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   
     confirmDeleteAllBtn.addEventListener('click', () => {
-      rowsToDelete.forEach(id => {
-        const row = document.querySelector(`tr[data-id="${id}"]`);
-        if (row) {
-          row.remove();
+      fetch('index.php?route=delete_sel_students', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ studentIds: rowsToDelete })
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          rowsToDelete.forEach(id => {
+            const row = document.querySelector(`tr[data-id="${id}"]`);
+            if (row) {
+              row.classList.add('fade-out');
+    
+              row.addEventListener('animationend', () => {
+                row.remove();
+              });
+            }
+          });
+          
+          rowsToDelete = [];
+          confirmDeleteAllModal.style.display = 'none';
+          document.getElementById('selectAll').checked = false;
+        } else {
+          alert('Error deleting students from the database.');
         }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        alert('Error occurred while deleting students.');
       });
-      rowsToDelete = [];
-      confirmDeleteAllModal.style.display = 'none';
-      document.getElementById('selectAll').checked = false;
     });
   
     confirmDeleteAllModal.querySelector('.close').addEventListener('click', () => {
@@ -480,7 +524,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
   
-
     function renderPagination(totalPages, currentPage) {
       const paginContainer = document.getElementById('pagination');
       paginContainer.innerHTML = '';

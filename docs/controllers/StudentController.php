@@ -37,7 +37,6 @@ class StudentController
         }
     }
 
-    
     public function createStudent()
     {
         header('Content-Type: application/json');
@@ -83,5 +82,50 @@ class StudentController
                 'status' => 'offline'
             ]
         ]);        
+    }
+
+    public function deleteStudent()
+    {
+        header('Content-Type: application/json');
+        global $pdo;
+        
+        $data = json_decode(file_get_contents("php://input"), true);
+        $id = $data['id'] ?? null;
+    
+        if (!$id) {
+            echo json_encode(['success' => false, 'message' => 'Missing student ID']);
+            return;
+        }
+    
+        $student = new Student($pdo);
+        $result = $student->delete($id);
+    
+        if ($result) {
+            echo json_encode(['success' => true]);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Failed to delete']);
+        }
+    }
+    
+    public function deleteSelectedStudents() 
+    {
+        header('Content-Type: application/json');
+        global $pdo;
+    
+        $data = json_decode(file_get_contents("php://input"), true); 
+        if (isset($data['studentIds']) && is_array($data['studentIds'])) {
+            $studentIds = $data['studentIds'];  
+
+            $studentModel = new Student($pdo);
+            $result = $studentModel->deleteSelected($studentIds);
+
+            if ($result) {
+                echo json_encode(['success' => true]);
+            } else {
+                echo json_encode(['success' => false, 'error' => 'Error deleting students']);
+            }
+        } else {
+            echo json_encode(['success' => false, 'error' => 'Invalid data']);
+        }
     }
 }

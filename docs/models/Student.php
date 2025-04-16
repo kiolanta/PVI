@@ -57,4 +57,23 @@ class Student
         $stmt = $this->pdo->query("SELECT COUNT(*) FROM students");
         return $stmt->fetchColumn();
     }
+
+    public function delete($id)
+    {
+        $stmt = $this->pdo->prepare("DELETE FROM students WHERE id = ?");
+        return $stmt->execute([$id]);
+    }
+
+    public function deleteSelected($studentIds)
+    {
+        if (empty($studentIds)) {
+            return false;
+        }
+        
+        $placeholders = implode(',', array_fill(0, count($studentIds), '?'));
+        $sql = "DELETE FROM students WHERE id IN ($placeholders)";
+        $stmt = $this->pdo->prepare($sql);
+        return $stmt->execute($studentIds);
+    }
 }
+

@@ -1,4 +1,7 @@
 <?php
+
+require_once 'db.php'; 
+
 class AuthController
 {
     public function login()
@@ -8,8 +11,8 @@ class AuthController
             session_start();
         }
 
-        require_once 'db.php'; 
-
+        global $pdo;
+        
         $input = json_decode(file_get_contents('php://input'), true);
         $login = trim($input['login']);
         $password = trim($input['password']);
