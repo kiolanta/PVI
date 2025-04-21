@@ -33,6 +33,16 @@ switch ($request) {
             echo json_encode(['error' => 'Method Not Allowed']);
         }
         break;
+    case 'update_student':
+        require 'controllers/StudentController.php';
+        $controller = new StudentController();
+        if ($_SERVER['REQUEST_METHOD'] === 'PUT') {
+            $controller->updateStudent();
+        } else {
+            http_response_code(405); 
+            echo json_encode(['error' => 'Method Not Allowed']);
+        }
+        break;
     case 'login':
         require 'controllers/AuthController.php';
         $controller = new AuthController();

@@ -355,12 +355,8 @@ document.addEventListener('DOMContentLoaded', () => {
       const day = String(dateObj.getDate()).padStart(2, '0');
       const month = String(dateObj.getMonth() + 1).padStart(2, '0');
       const year = dateObj.getFullYear();
-      const formattedBirthday = `${day}.${month}.${year}`;
-  
-      rowToEdit.cells[1].textContent = group;
-      rowToEdit.cells[2].textContent = `${firstName} ${lastName}`;
-      rowToEdit.cells[3].textContent = gender;
-      rowToEdit.cells[4].textContent = formattedBirthday;
+      const formattedBirthday = `${year}-${month}-${day}`;
+      const displayBirthday = `${day}.${month}.${year}`;
   
       const studentData = {
         studentId,
@@ -368,14 +364,44 @@ document.addEventListener('DOMContentLoaded', () => {
         firstName,
         lastName,
         gender,
-        birthday: formattedBirthday,
+        birthday: displayBirthday,
       };
   
       console.log('Updated Student Data:', JSON.stringify(studentData));
-  
-      document.getElementById('editStudentModal').style.display = 'none';
-      document.getElementById('editStudentForm').reset();
-      rowToEdit = null;
+      
+      fetch('index.php?route=update_student', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id: studentId, 
+          group,
+          firstName,
+          lastName,
+          gender,
+          birthday: formattedBirthday,
+        }),
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          rowToEdit.cells[1].textContent = group;
+          rowToEdit.cells[2].textContent = `${firstName} ${lastName}`;
+          rowToEdit.cells[3].textContent = gender;
+          rowToEdit.cells[4].textContent = displayBirthday;
+      
+          document.getElementById('editStudentModal').style.display = 'none';
+          document.getElementById('editStudentForm').reset();
+          rowToEdit = null;
+        } else {
+          alert(data.error || 'Error updating student');
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        alert('Server error while updating student');
+      });
     }
   });
   
