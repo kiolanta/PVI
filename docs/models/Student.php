@@ -75,5 +75,19 @@ class Student
         $stmt = $this->pdo->prepare($sql);
         return $stmt->execute($studentIds);
     }
+
+    public function update($id, $group, $name, $gender, $birthday)
+    {
+        $stmt = $this->pdo->prepare("UPDATE students SET `group` = ?, name = ?, gender = ?, birthday = ? WHERE id = ?");
+        return $stmt->execute([$group, $name, $gender, $birthday, $id]);
+    }
+
+    public function nameExists($name, $birthday, $excludeId)
+    {
+        $stmt = $this->pdo->prepare("SELECT id FROM students WHERE name = ? AND birthday = ? AND id != ?");
+        $stmt->execute([$name, $birthday, $excludeId]);
+        return $stmt->rowCount() > 0;
+    }
+
 }
 

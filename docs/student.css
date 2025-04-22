@@ -8,7 +8,7 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background-color:rgb(123, 100, 160) ;
+    background-color:rgb(123, 100, 160);
     padding: 13px 10px;
 }
 
@@ -357,7 +357,7 @@ legend {
 }
 
 .pagin button:hover {
-    background-color: lavender;
+    background-color: rgb(223, 225, 229);
     color: black;
 }
 
@@ -626,6 +626,21 @@ select.error {
     font-weight: bold;
     transform: scale(1.1);
 }
+
+.fade-out {
+    animation: fadeOut 0.5s ease-in-out forwards;
+  }
+  
+  @keyframes fadeOut {
+    0% {
+      opacity: 1;
+      transform: scaleY(1);
+    }
+    100% {
+      opacity: 0;
+      transform: scaleY(0);
+    }
+  }
 
 @media (max-width: 1024px) {
     .sideburger { 

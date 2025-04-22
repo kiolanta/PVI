@@ -103,6 +103,7 @@ if (submitLoginBtn) {
     if (response.ok) {
       const result = await response.json();
       localStorage.setItem('user', JSON.stringify(result.user));
+      loginModal.style.display = 'none';
       location.reload();
     } else {
       alert("Невірний логін або пароль");
@@ -113,11 +114,49 @@ if (submitLoginBtn) {
 
 window.logout = function () {
   fetch('index.php?route=logout')
-    .then(() => {
-      localStorage.removeItem('user');
-      location.reload();
+    .then(response => {
+      if (response.ok) {
+        localStorage.removeItem('user');
+        updateStudentsStatusOffline();  // Оновлюємо статус на офлайн
+      }
+      location.reload();  // Перезавантаження сторінки для відображення змін
+    })
+    .catch(error => {
+      console.error('Помилка при логауті:', error);
     });
 };
+
+// Оновлення статусу студентів на офлайн
+function updateStudentsStatusOffline() {
+  // Отримуємо список студентів через AJAX запит
+  fetch('index.php?route=students')
+    .then(response => response.json())
+    .then(data => {
+      if (data && Array.isArray(data.students)) {
+        const studentsTable = document.querySelector('#studentsTable');
+        if (studentsTable) {
+          const rows = studentsTable.querySelectorAll('tr');
+          rows.forEach(row => {
+            const studentId = row.getAttribute('data-id');  // припускаємо, що ID студента є в атрибуті data-id
+            const statusCell = row.querySelector('.status-cell');
+            const student = data.students.find(student => student.id == studentId);
+            
+            if (student && statusCell) {
+              if (student.status === 'offline') {
+                statusCell.classList.remove('status-active');
+                statusCell.classList.add('status-inactive');
+                statusCell.innerText = 'offline';
+              }
+            }
+          });
+        }
+      }
+    })
+    .catch(error => {
+      console.error('Помилка при оновленні статусу:', error);
+    });
+}
+
 
 const bell = document.querySelector(".notification-bell");
 const indicator = document.getElementById("notificationIndicator");
