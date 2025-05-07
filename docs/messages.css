@@ -4,12 +4,20 @@
     font-family: Arial, Helvetica, sans-serif;
 }
 
-.header{
+body {
+    overflow: hidden; /* Запобігаємо скролу сторінки */
+}
+
+.header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background-color:rgb(123, 100, 160) ;
+    background-color: rgb(123, 100, 160);
     padding: 13px 10px;
+    position: fixed; /* Фіксуємо хедер зверху */
+    top: 0;
+    width: 100%;
+    z-index: 1000;
 }
 
 .logo a {
@@ -57,7 +65,7 @@
     top: 6px;  
     right: 8px;  
     width: 10px;
-    height: 10px;;
+    height: 10px;
     background-color: #efa6a6;
     border-radius: 50%;
     box-shadow: 0 0 5px rgba(231, 30, 30, 0.8);
@@ -172,7 +180,7 @@
 }
 
 .notification-item:last-child {
-    border-bottom:none;
+    border-bottom: none;
 }
 
 .notification-item img {
@@ -181,8 +189,8 @@
     border: 2px solid lavender;
 }
 
-.message {
-    background: #ccc;
+.messagee {
+   background: #ccc;
     padding: 10px 15px;
     border-radius: 10px;
     max-width: 200px; 
@@ -196,6 +204,7 @@
     padding: 40px;
     position: fixed;
     height: 100%;
+    top: 60px; /* Враховуємо висоту хедера */
 }
 
 .menu {
@@ -203,7 +212,7 @@
 }
 
 .menu li {
-    padding: 10px ;
+    padding: 10px;
     font-size: 23px;
 } 
 
@@ -224,25 +233,243 @@
 main {
     margin-left: 340px; 
     padding: 45px 20px;
+    margin-top: 60px; /* Враховуємо фіксований хедер */
+    height: calc(100vh - 60px); /* Обмежуємо висоту main */
+    overflow: hidden;
+}
+
+.messages-container {
+    display: flex;
+    gap: 20px;
+    height: 80%; /* Змінюємо на відсоток для гнучкості */
+    max-height: 80%;
+    overflow: hidden;
+}
+
+.chat-rooms {
+    width: 30%;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    padding: 10px;
+    height: 98%;
+    overflow-y: auto; /* Дозволяємо скрол тільки всередині чат-румів */
+    box-sizing: border-box;/* Дозволяємо скрол тільки всередині чат-румів */
+}
+
+.chat-rooms-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.chat-rooms-header h2 {
+    font-size: 18px;
+}
+
+.new-chat {
+    color: #6f5977;
+    text-decoration: none;
+    font-size: 14px;
+}
+
+.new-chat:hover {
+    text-decoration: underline;
+}
+
+.chat-list {
+    list-style: none;
+}
+
+.chat-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-bottom: 5px;
+}
+
+.chat-item.active {
+    background-color: #d3c6e6;
+}
+
+.chat-item:hover {
+    background-color: #e0e0e0;
+}
+
+.chat-avatar {
+    height: 40px;
+    border-radius: 50%;
+}
+
+.chat-area {
+    width: 70%;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    height: 98%;
+}
+
+.chat-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    border-bottom: 1px solid #ccc;
+}
+
+.chat-header h2 {
+    font-size: 18px;
+}
+
+.members {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.member-avatars {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.member-avatar {
+    height: 30px;
+    border-radius: 50%;
+}
+
+.more-members {
+    font-size: 14px;
+    color: #6f5977;
+}
+
+.chat-messages {
+    flex: 1;
+    padding: 20px;
+    overflow-y: auto;
+    max-height: calc(100% - 100px); 
+    display: flex;
+    flex-direction: column; /* Повідомлення йдуть вертикально */
+    gap: 10px;/* Обмежуємо висоту повідомлень */
+}
+
+.message {
+    display: flex;
+    align-items: flex-start; /* Вирівнюємо зверху */
+}
+
+.message.received {
+    align-self: flex-start; /* Повідомлення зліва */
+    flex-direction: row; /* Аватар зліва, контент справа */
+}
+
+.message.sent {
+    align-self: flex-end; /* Повідомлення справа */
+    flex-direction: row; /* Аватар справа, контент зліва */
+}
+
+.message-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+
+.message-text {
+    margin-left: 10px;
+    display: flex;
+    align-items: flex-start;
+}
+
+.message-content {
+    background-color: #d3c6e6;
+    padding: 10px;
+    border-radius: 10px;
+    max-width: 70%;
+    word-break: break-word;
+}
+
+.message-sender {
+    font-size: 14px;
+}
+
+.message-avatar {
+    height: 30px;
+    border-radius: 50%;
+}
+
+.chat-input {
+    display: flex;
+    align-items: center;
+    padding: 10px;
+    border-top: 1px solid #ccc;
+}
+
+.chat-input textarea {
+    flex: 1;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 20px;
+    resize: none;
+    height: 40px;
+}
+
+.send-button {
+    background: none;
+    border: none;
+    color: #6f5977;
+    font-size: 18px;
+    cursor: pointer;
+    margin-left: 10px;
+}
+
+.send-button:hover {
+    color: #5a4b6b;
+}
+
+@media (max-width: 1024px) {
+    .sideburger { 
+        width: 200px;
+        padding: 40px;
+        position: fixed;
+        height: 100%;
+        top: 60px;
+    } 
+    
+    main {
+        margin-left: 240px;
+        padding: 45px 20px;
+        margin-top: 60px;
+        height: calc(100vh - 60px);
+    }
 }
 
 @media screen and (max-width: 860px) {
+    
     .header {
         flex-direction: row;
         text-align: center;
     }
     
     .sideburger {
-        position: static;
+        position: fixed; /* Фіксуємо під хедером */
+        top: 60px; /* Враховуємо висоту хедера */
         width: 100%;
         padding: 15px 0;
+        height: auto;
+        /* Додаємо фон, щоб меню виглядало краще */
+        z-index: 900;
     }
     
     .menu {
         display: flex;
         justify-content: center;
         gap: 40px;
-        border: 1px solid rgb(123, 100, 160) ;
+        border: 1px solid rgb(123, 100, 160);
         border-radius: 15px;
     }
     
@@ -251,8 +478,30 @@ main {
         padding: 5px;
     }
 
-    main{
+    main {
         margin-left: 0;
+        margin-top: 120px; /* Враховуємо хедер (60px) і висоту меню (приблизно 60px) */
+        height: calc(100vh - 120px); /* Віднімаємо висоту хедера і меню */
+    }
+
+    .messages-container {
+        flex-direction: column;
+        height: 500px;
+        max-height: 500px;
+    }
+
+    .chat-rooms, .chat-area {
+        width: 100%;
+        height: 250px;
+        max-height: 250px;
+    }
+
+    .chat-rooms {
+        margin-bottom: 10px; /* Додаємо відступ між чат-румами і чатом */
+    }
+
+    .chat-messages {
+        max-height: 150px;
     }
 }
 
@@ -266,7 +515,7 @@ main {
         padding: 5px;
     }
 
-    .username{
+    .username {
         display: none;
     }
 
@@ -303,6 +552,14 @@ main {
         font-size: 14px; 
         margin-top: 5px; 
     }
+
+    .chat-avatar, .member-avatar, .message-avatar {
+        height: 25px;
+    }
+
+    .chat-input textarea {
+        height: 30px;
+    }
 }
 
 @media screen and (max-width: 480px) {
@@ -315,9 +572,17 @@ main {
         gap: 3px;
         padding: 3px;
     }
+
+    .chat-rooms-header h2, .chat-header h2 {
+        font-size: 16px;
+    }
+
+    .new-chat, .more-members {
+        font-size: 12px;
+    }
 }
 
-@media screen and (max-width: 320px){
+@media screen and (max-width: 320px) {
     .notification-dropdown {
         max-width: 200px; 
     }
@@ -335,5 +600,13 @@ main {
         padding: 8px; 
         font-size: 12px; 
         margin-top: 5px; 
+    }
+
+    .chat-avatar, .member-avatar, .message-avatar {
+        height: 20px;
+    }
+
+    .chat-input textarea {
+        height: 25px;
     }
 }

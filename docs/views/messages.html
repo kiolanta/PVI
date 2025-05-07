@@ -32,17 +32,17 @@
                             <div class="notification-item">
                                 <img src="../ava.jpg" alt="Avatar">
                                 <span>Admin</span>
-                                <div class="message">Перевірте пошту.</div>
+                                <div class="messagee">Перевірте пошту.</div>
                             </div>
                             <div class="notification-item">
                                 <img src="../ava.jpg" alt="Avatar">
                                 <span>Iolanta K.</span>
-                                <div class="message">Привітусики! Як справи? Чуєш не хочеш піти погуляти?</div>
+                                <div class="messagee">Привітусики! Як справи? Чуєш не хочеш піти погуляти?</div>
                             </div>
                             <div class="notification-item">
                                 <img src="../ava.jpg" alt="Avatar">
                                 <span>Ann S.</span>
-                                <div class="message">Що задали?</div>
+                                <div class="messagee">Що задали?</div>
                             </div>
                         </div>
                     </div>
@@ -69,7 +69,71 @@
 
     <main>
         <h1>Messages</h1>
-        <br><br><br>
+        <br><br>
+            <div class="messages-container">
+            <div class="chat-rooms">
+                <div class="chat-rooms-header">
+                    <h2>Chat room</h2>
+                    <a href="#" class="new-chat">+ New chat room</a>
+                </div>
+                <ul class="chat-list">
+                    <li class="chat-item active">
+                        <img src="../ava.jpg" alt="Avatar" class="chat-avatar">
+                        <span>Admin</span>
+                    </li>
+                    <li class="chat-item">
+                        <img src="../ava.jpg" alt="Avatar" class="chat-avatar">
+                        <span>Ann Smith</span>
+                    </li>
+                    <li class="chat-item">
+                        <img src="../ava.jpg" alt="Avatar" class="chat-avatar">
+                        <span>John Bond</span>
+                    </li>
+                    <li class="chat-item">
+                        <img src="../ava.jpg" alt="Avatar" class="chat-avatar">
+                        <span>Ivon Stan</span>
+                    </li>
+                </ul>
+            </div>
+            <div class="chat-area">
+                <div class="chat-header">
+                    <h2>Chat room: Admin</h2>
+                    <div class="members">
+                        <span>Members</span>
+                        <div class="member-avatars">
+                            <img src="../ava.jpg" alt="Member" class="member-avatar">
+                            <img src="../ava.jpg" alt="Member" class="member-avatar">
+                            <img src="../ava.jpg" alt="Member" class="member-avatar">
+                            <span class="more-members">+2</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="chat-messages">
+                    <div class="message received">
+                        <div class="message-wrapper">
+                            <img src="../ava.jpg" alt="Avatar" class="message-avatar">
+                            <span class="message-sender">Admin</span>
+                        </div>
+                        <div class="message-text">
+                            <div class="message-content"></div>
+                        </div>
+                    </div>
+                    <div class="message sent">
+                        <div class="message-text">
+                            <div class="message-content">Hello, how are you?</div>
+                        </div>
+                        <div class="message-wrapper">
+                            <img src="../ava.jpg" alt="Avatar" class="message-avatar">
+                            <span class="message-sender">Me</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="chat-input">
+                    <textarea placeholder="Type a message..."></textarea>
+                    <button class="send-button"><i class="fa-solid fa-paper-plane"></i></button>
+                </div>
+            </div>
+        </div>
 
     </main>
     <script src="../script.js"></script>
