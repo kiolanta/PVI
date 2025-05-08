@@ -16,7 +16,7 @@ body {
     padding: 13px 10px;
     position: fixed; /* Фіксуємо хедер зверху */
     top: 0;
-    width: 100%;
+    width: 99%;
     z-index: 1000;
 }
 
@@ -349,7 +349,7 @@ main {
 
 .chat-messages {
     flex: 1;
-    padding: 20px;
+    padding: 10px;
     overflow-y: auto;
     max-height: calc(100% - 100px); 
     display: flex;
@@ -359,7 +359,7 @@ main {
 
 .message {
     display: flex;
-    align-items: flex-start; /* Вирівнюємо зверху */
+    align-items: flex-start;
 }
 
 .message.received {
@@ -369,7 +369,8 @@ main {
 
 .message.sent {
     align-self: flex-end; /* Повідомлення справа */
-    flex-direction: row; /* Аватар справа, контент зліва */
+    flex-direction: row;
+    justify-content: flex-end; /* Аватар справа, контент зліва */
 }
 
 .message-wrapper {
@@ -380,16 +381,17 @@ main {
 }
 
 .message-text {
-    margin-left: 10px;
     display: flex;
     align-items: flex-start;
+    margin-left: 10px; /* Прибираємо зайвий відступ */
+    margin-right: 10px; /* Додаємо відступ між текстом і аватаркою для .sent */
+    max-width: 60%;
 }
 
 .message-content {
     background-color: #d3c6e6;
     padding: 10px;
     border-radius: 10px;
-    max-width: 70%;
     word-break: break-word;
 }
 
