@@ -575,7 +575,6 @@ document.addEventListener('DOMContentLoaded', () => {
       paginContainer.appendChild(createPageButton('>', currentPage + 1));
     }
     
-    
     function renderStudentsToTable(students) {
         const tbody = document.querySelector('#studentsTable tbody');
         tbody.innerHTML = '';
@@ -611,7 +610,6 @@ document.addEventListener('DOMContentLoaded', () => {
           tbody.appendChild(row);
         });
     
-       
         document.querySelectorAll('#studentsTable tbody input[type="checkbox"]').forEach(chk => {
           chk.addEventListener('change', updateSelectAllCheckbox);
         });

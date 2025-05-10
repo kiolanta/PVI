@@ -117,18 +117,18 @@ window.logout = function () {
     .then(response => {
       if (response.ok) {
         localStorage.removeItem('user');
-        updateStudentsStatusOffline();  // Оновлюємо статус на офлайн
+        updateStudentsStatusOffline();  
+        clearLocalStorageForUser(currentUserId);
       }
-      location.reload();  // Перезавантаження сторінки для відображення змін
+      location.reload();  
     })
     .catch(error => {
       console.error('Помилка при логауті:', error);
     });
 };
 
-// Оновлення статусу студентів на офлайн
+
 function updateStudentsStatusOffline() {
-  // Отримуємо список студентів через AJAX запит
   fetch('index.php?route=students')
     .then(response => response.json())
     .then(data => {
@@ -137,7 +137,7 @@ function updateStudentsStatusOffline() {
         if (studentsTable) {
           const rows = studentsTable.querySelectorAll('tr');
           rows.forEach(row => {
-            const studentId = row.getAttribute('data-id');  // припускаємо, що ID студента є в атрибуті data-id
+            const studentId = row.getAttribute('data-id'); 
             const statusCell = row.querySelector('.status-cell');
             const student = data.students.find(student => student.id == studentId);
             
@@ -173,3 +173,282 @@ const bellIcon = document.querySelector(".fa-bell");
       window.location.href = "messages.html";
     });
   }
+
+  const socket = io("http://localhost:3000");
+  const currentUserId = user?.id;
+  console.log('Ініціалізація, currentUserId:', currentUserId);
+  
+  let chatId = null;
+  let chatIdParticipantId = null;
+  const studentCache = {};
+  
+  socket.emit('register', currentUserId);
+  
+  window.addEventListener('DOMContentLoaded', () => {
+    loadChatsFromStorage();
+  });
+  
+  function getNameById(id) {
+    if (studentCache[id]) return Promise.resolve(studentCache[id]);
+  
+    console.log('Запит імені для id:', id);
+    return fetch(`index.php?route=student&id=${id}`, {
+      method: 'GET',
+      credentials: 'include',
+    })
+      .then(res => {
+        console.log('Сира відповідь сервера для id:', id, res);
+        return res.text(); // Отримуємо як текст для дебагу
+      })
+      .then(text => {
+        console.log('Текст відповіді для id:', id, text);
+        try {
+          const student = JSON.parse(text);
+          studentCache[id] = student.name || 'Unknown';
+          return studentCache[id];
+        } catch (err) {
+          console.error('Помилка парсингу JSON для id:', id, err, 'Текст:', text);
+          return 'Unknown';
+        }
+      })
+      .catch(err => {
+        console.error('Помилка отримання імені студента для id:', id, err);
+        return 'Unknown';
+      });
+  }
+  
+  document.querySelector('.new-chat').addEventListener('click', () => {
+    document.getElementById('newChatModal').style.display = 'block';
+    loadStudentList();
+  });
+  
+  document.getElementById('closeModal').addEventListener('click', () => {
+    document.getElementById('newChatModal').style.display = 'none';
+  });
+  
+  function loadStudentList() {
+    fetch(`http://localhost:3000/chats/${currentUserId}`)
+      .then(res => res.json())
+      .then(chats => {
+        const existingChatParticipants = chats.flatMap(chat => chat.participants).filter(id => id !== currentUserId);
+  
+        fetch('index.php?route=students', {
+          method: 'GET',
+          credentials: 'include',
+        })
+          .then(res => res.json())
+          .then(response => {
+            const students = response.data;
+            const list = document.getElementById('student-list');
+            list.innerHTML = '';
+  
+            students.forEach(student => {
+              if (student.id == currentUserId || existingChatParticipants.includes(student.id)) return;
+  
+              studentCache[student.id] = student.name;
+  
+              const li = document.createElement('li');
+              li.textContent = student.name;
+              li.dataset.userId = student.id;
+  
+              li.addEventListener('click', () => {
+                document.getElementById('newChatModal').style.display = 'none';
+                addChatItem(student.id, student.name);
+                loadChatWith(student.id);
+              });
+  
+              list.appendChild(li);
+            });
+          })
+          .catch(err => console.error('Помилка при отриманні студентів:', err));
+      })
+      .catch(err => console.error('Помилка при отриманні чатів:', err));
+  }
+  
+  function clearLocalStorageForUser(userId) {
+    console.log('Очищено localStorage для:', userId);
+    localStorage.removeItem(`chats_${userId}`);
+  }
+  
+  window.logout = function () {
+    fetch('index.php?route=logout')
+      .then(response => {
+        if (response.ok) {
+          localStorage.removeItem('user');
+          updateStudentsStatusOffline();
+          if (currentUserId) {
+            clearLocalStorageForUser(currentUserId);
+          } else {
+            console.warn('currentUserId не визначено під час logout');
+          }
+          location.reload();
+        } else {
+          alert('Не вдалося вийти. Спробуйте ще раз.');
+        }
+      })
+      .catch(error => {
+        console.error('Помилка при логауті:', error);
+        alert('Помилка під час виходу. Перевірте підключення.');
+      });
+  };
+  
+  function addChatItem(userId, name) {
+    const chatList = document.getElementById('chat-list');
+  
+    if ([...chatList.children].some(el => el.dataset.userId === userId)) return;
+  
+    fetch('http://localhost:3000/chats/create', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user1: currentUserId, user2: userId }),
+    })
+      .then(res => res.json())
+      .then(chat => {
+        const li = document.createElement('li');
+        li.classList.add('chat-item');
+        li.dataset.userId = userId;
+        li.innerHTML = `<img src="../ava.jpg" class="chat-avatar"><span>${name}</span>`;
+        li.addEventListener('click', () => {
+          loadChatWith(userId);
+          document.getElementById('room-title').textContent = `Chat room: ${name}`;
+        });
+        chatList.appendChild(li);
+        console.log('Додано чат з userId:', userId, 'іменем:', name);
+  
+        const existingChats = JSON.parse(localStorage.getItem(`chats_${currentUserId}`)) || [];
+        if (!existingChats.some(c => c.participants.includes(userId))) {
+          existingChats.push({
+            participants: [currentUserId, userId],
+            name: name,
+          });
+          localStorage.setItem(`chats_${currentUserId}`, JSON.stringify(existingChats));
+        }
+      })
+      .catch(err => console.error('Помилка створення чату:', err));
+  }
+  
+  function loadChatsFromStorage() {
+    const chatList = document.getElementById('chat-list');
+    chatList.innerHTML = '';
+  
+    fetch('index.php?route=students', {
+      method: 'GET',
+      credentials: 'include',
+    })
+      .then(res => res.json())
+      .then(response => {
+        const students = response.data;
+        students.forEach(student => {
+          studentCache[student.id] = student.name;
+        });
+        console.log('studentCache:', studentCache);
+  
+        fetch(`http://localhost:3000/chats/${currentUserId}`)
+          .then(res => {
+            if (!res.ok) throw new Error(`Помилка ${res.status}: ${res.statusText}`);
+            return res.json();
+          })
+          .then(chats => {
+            console.log('Чати з сервера:', chats);
+            localStorage.setItem(`chats_${currentUserId}`, JSON.stringify(chats));
+  
+            const promises = chats.map(chat => {
+              const otherId = chat.participants.find(id => String(id) !== String(currentUserId));
+              console.log('chat:', chat, 'otherId:', otherId);
+              if (otherId) {
+                return getNameById(otherId).then(name => ({ otherId, name }));
+              }
+              return Promise.resolve(null);
+            });
+  
+            Promise.all(promises).then(results => {
+              results.forEach(result => {
+                if (result) {
+                  console.log('Додаємо чат з otherId:', result.otherId, 'іменем:', result.name);
+                  addChatItem(result.otherId, result.name);
+                }
+              });
+            });
+          })
+          .catch(err => console.error('Помилка завантаження чатів:', err));
+      })
+      .catch(err => console.error('Помилка завантаження студентів:', err));
+  }
+  
+  function loadChatWith(selectedUserId) {
+    chatIdParticipantId = selectedUserId;
+  
+    socket.emit('startChat', { user1: currentUserId, user2: selectedUserId }, (response) => {
+      if (response.error) {
+        console.error('Помилка при створенні чату:', response.error);
+        return;
+      }
+  
+      chatId = response.chatId;
+      document.getElementById('chat-messages').innerHTML = '';
+      loadMessages(chatId);
+    });
+  }
+  
+  function loadMessages(chatId) {
+    fetch(`http://localhost:3000/messages/${chatId}`)
+      .then(res => res.json())
+      .then(messages => {
+        console.log('Завантажені повідомлення:', messages);
+        if (messages.length > 0) {
+          messages.forEach(msg => appendMessage(msg, msg.senderId == currentUserId));
+        } else {
+          console.log('Повідомлень немає');
+        }
+      })
+      .catch(err => console.error('Помилка завантаження повідомлень:', err));
+  }
+  
+  function appendMessage(message, isSentByCurrentUser) {
+    const chatMessages = document.getElementById('chat-messages');
+    const msgElem = document.createElement('div');
+    msgElem.classList.add('message');
+    msgElem.classList.add(isSentByCurrentUser ? 'sent' : 'received');
+  
+    msgElem.innerHTML = `
+      <img src="../ava.jpg" alt="avatar" class="message-avatar">
+      <div class="message-text">
+          <div class="message-content">${message.text}</div>
+      </div>
+    `;
+  
+    chatMessages.appendChild(msgElem);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+  }
+  
+  const sendBtn = document.getElementById('send-button');
+  const messageInput = document.getElementById('message-input');
+  
+  sendBtn.addEventListener('click', () => {
+    const text = messageInput.value.trim();
+    if (!text || !chatId || !chatIdParticipantId) return;
+  
+    const message = {
+      chatId: chatId,
+      senderId: currentUserId,
+      receiverIds: [chatIdParticipantId],
+      text: text,
+    };
+  
+    socket.emit('sendMessage', message, (response) => {
+      if (response.error) {
+        console.error('Помилка надсилання повідомлення:', response.error);
+        return;
+      }
+      appendMessage(message, true);
+      messageInput.value = '';
+    });
+  });
+  
+  socket.on('receiveMessage', (message) => {
+    if (message.chatId === chatId && String(message.senderId) !== String(currentUserId)) {
+      appendMessage(message, false);
+    } else {
+      console.log('Нове повідомлення в іншому чаті або моє власне:', message);
+    }
+  });

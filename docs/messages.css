@@ -354,7 +354,8 @@ main {
     max-height: calc(100% - 100px); 
     display: flex;
     flex-direction: column; /* Повідомлення йдуть вертикально */
-    gap: 10px;/* Обмежуємо висоту повідомлень */
+    gap: 10px;
+   
 }
 
 .message {
@@ -431,6 +432,41 @@ main {
 
 .send-button:hover {
     color: #5a4b6b;
+}
+
+
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 9999;
+    left: 0; top: 0;
+    width: 100%; height: 100%;
+    background-color: rgba(0,0,0,0.4);
+}
+
+.modal-content {
+    background-color: #fff;
+    margin: 10% auto;
+    padding: 20px;
+    border-radius: 12px;
+    width: 400px;
+    max-height: 60%;
+    overflow-y: auto;
+}
+
+.close-button {
+    float: right;
+    font-size: 28px;
+    cursor: pointer;
+}
+
+#student-list li {
+    padding: 10px;
+    border-bottom: 1px solid #ddd;
+    cursor: pointer;
+}
+#student-list li:hover {
+    background-color: #f0f0f0;
 }
 
 @media (max-width: 1024px) {
