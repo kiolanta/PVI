@@ -38,29 +38,80 @@ io.on('connection', (socket) => {
     console.log(`🧍 Користувач ${userId} зареєстрований`);
   });
 
-  // Початок чату
-  socket.on('startChat', async ({ user1, user2 }, callback) => {
-    try {
-      let chat = await Chat.findOne({
-        participants: { $all: [user1, user2], $size: 2 },
+  socket.on('startChatRoom', async ({ userIds, groupName }, callback) => {
+  try {
+    const isGroup = userIds.length > 2;
+    let chat;
+
+    if (isGroup) {
+      chat = await Chat.create({
+        participants: userIds,
+        isGroup: true,
+        groupName,
+      });
+    } else {
+      chat = await Chat.findOne({
+        participants: { $all: userIds, $size: 2 },
         isGroup: false,
       });
-
       if (!chat) {
         chat = await Chat.create({
-          participants: [user1, user2],
+          participants: userIds,
           isGroup: false,
         });
       }
-
-      // Приєднання до сокет-кімнати чату
-      socket.join(chat._id.toString());
-      callback({ chatId: chat._id.toString() });
-    } catch (err) {
-      console.error('❌ Помилка при створенні або пошуку чату:', err);
-      callback({ error: 'Не вдалося створити чат' });
     }
-  });
+
+    socket.join(chat._id.toString());
+    callback({ chatId: chat._id.toString() });
+
+    userIds.forEach(uid => {
+      const sockId = onlineUsers.get(uid);
+      if (sockId) {
+        io.to(sockId).emit('newChatAvailable', chat);
+      }
+    });
+  } catch (err) {
+    console.error('❌ Помилка створення чату:', err);
+    callback({ error: 'Помилка створення чату' });
+  }
+});
+
+socket.on('addMembersToChat', async ({ chatId, newUserIds }, callback) => {
+  try {
+    const chat = await Chat.findById(chatId);
+    if (!chat || !chat.isGroup) {
+      return callback({ error: 'Чат не знайдено або не є груповим' });
+    }
+
+    // Уникаємо дублікатів
+    const updatedParticipants = [...new Set([...chat.participants, ...newUserIds])];
+    chat.participants = updatedParticipants;
+    await chat.save();
+
+    // Оповістити всіх нових користувачів
+    newUserIds.forEach(uid => {
+      const sockId = onlineUsers.get(uid);
+      if (sockId) {
+        io.to(sockId).emit('newChatAvailable', chat);
+      }
+    });
+
+    // Оновити всім іншим теж
+    updatedParticipants.forEach(uid => {
+      const sockId = onlineUsers.get(uid);
+      if (sockId) {
+        io.to(sockId).emit('chatUpdated', chat);
+      }
+    });
+
+    callback({ success: true, participants: updatedParticipants });
+  } catch (err) {
+    console.error('❌ Помилка при додаванні учасників:', err);
+    callback({ error: 'Не вдалося додати учасників' });
+  }
+});
+
 
   socket.on('sendMessage', async (message, callback) => {
     try {
@@ -134,6 +185,20 @@ app.get('/chats/verify/:user1/:user2', async (req, res) => {
     });
     res.json(!!chat); // Повертає true, якщо чат існує, інакше false
   });
+
+// ✅ Отримати чат за ID (для updateMembers)
+app.get('/chat/:chatId', async (req, res) => {
+  try {
+    const chat = await Chat.findById(req.params.chatId);
+    if (!chat) {
+      return res.status(404).json({ error: 'Чат не знайдено' });
+    }
+    res.json(chat);
+  } catch (err) {
+    console.error('❌ Помилка при отриманні чату:', err);
+    res.status(500).json({ error: 'Помилка сервера' });
+  }
+});
 
 server.listen(3000, () => {
   console.log('🚀 Сервер Socket.IO працює на http://localhost:3000');

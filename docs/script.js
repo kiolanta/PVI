@@ -113,20 +113,31 @@ if (submitLoginBtn) {
 }
 
 window.logout = function () {
-  fetch('index.php?route=logout')
-    .then(response => {
-      if (response.ok) {
-        localStorage.removeItem('user');
-        updateStudentsStatusOffline();  
-        clearLocalStorageForUser(currentUserId);
-      }
-      location.reload();  
-    })
-    .catch(error => {
-      console.error('Помилка при логауті:', error);
-    });
-};
+    fetch('index.php?route=logout')
+      .then(response => {
+        if (response.ok) {
+          localStorage.removeItem('user');
+          updateStudentsStatusOffline();
+          if (currentUserId) {
+            clearLocalStorageForUser(currentUserId);
+          } else {
+            console.warn('currentUserId не визначено під час logout');
+          }
+          location.reload();
+        } else {
+          alert('Не вдалося вийти. Спробуйте ще раз.');
+        }
+      })
+      .catch(error => {
+        console.error('Помилка при логауті:', error);
+        alert('Помилка під час виходу. Перевірте підключення.');
+      });
+  };
 
+  function clearLocalStorageForUser(userId) {
+  console.log('Очищено localStorage для:', userId);
+  localStorage.removeItem(`chats_${userId}`);
+}
 
 function updateStudentsStatusOffline() {
   fetch('index.php?route=students')
@@ -157,7 +168,6 @@ function updateStudentsStatusOffline() {
     });
 }
 
-
 const bell = document.querySelector(".notification-bell");
 const indicator = document.getElementById("notificationIndicator");
 const bellIcon = document.querySelector(".fa-bell"); 
@@ -174,281 +184,418 @@ const bellIcon = document.querySelector(".fa-bell");
     });
   }
 
-  const socket = io("http://localhost:3000");
-  const currentUserId = user?.id;
-  console.log('Ініціалізація, currentUserId:', currentUserId);
-  
-  let chatId = null;
-  let chatIdParticipantId = null;
-  const studentCache = {};
-  
-  socket.emit('register', currentUserId);
-  
-  window.addEventListener('DOMContentLoaded', () => {
-    loadChatsFromStorage();
-  });
-  
-  function getNameById(id) {
-    if (studentCache[id]) return Promise.resolve(studentCache[id]);
-  
-    console.log('Запит імені для id:', id);
-    return fetch(`index.php?route=student&id=${id}`, {
-      method: 'GET',
-      credentials: 'include',
+
+
+
+const socket = io("http://localhost:3000");
+const currentUserId = String(user?.id);
+let chatId = null;
+const studentCache = {};
+
+socket.emit('register', currentUserId);
+window.addEventListener('DOMContentLoaded', () => loadChatsFromStorage());
+
+function getNameById(id) {
+  if (studentCache[id]) return Promise.resolve(studentCache[id]);
+  return fetch(`index.php?route=student&id=${id}`, {
+    method: 'GET',
+    credentials: 'include',
+  })
+    .then(res => res.text())
+    .then(text => {
+      try {
+        const student = JSON.parse(text);
+        const fullName = student.name || 'Unknown Unknown';
+        const [firstName, lastName] = fullName.split(' ');
+        studentCache[id] = {
+          firstName: firstName || 'Unknown',
+          lastName: lastName || 'User',
+        };
+        return studentCache[id];
+      } catch {
+        return { firstName: 'Unknown', lastName: 'User' };
+      }
     })
-      .then(res => {
-        console.log('Сира відповідь сервера для id:', id, res);
-        return res.text(); // Отримуємо як текст для дебагу
-      })
-      .then(text => {
-        console.log('Текст відповіді для id:', id, text);
-        try {
-          const student = JSON.parse(text);
-          studentCache[id] = student.name || 'Unknown';
-          return studentCache[id];
-        } catch (err) {
-          console.error('Помилка парсингу JSON для id:', id, err, 'Текст:', text);
-          return 'Unknown';
-        }
-      })
-      .catch(err => {
-        console.error('Помилка отримання імені студента для id:', id, err);
-        return 'Unknown';
-      });
-  }
-  
-  document.querySelector('.new-chat').addEventListener('click', () => {
-    document.getElementById('newChatModal').style.display = 'block';
-    loadStudentList();
-  });
-  
-  document.getElementById('closeModal').addEventListener('click', () => {
-    document.getElementById('newChatModal').style.display = 'none';
-  });
-  
-  function loadStudentList() {
-    fetch(`http://localhost:3000/chats/${currentUserId}`)
-      .then(res => res.json())
-      .then(chats => {
-        const existingChatParticipants = chats.flatMap(chat => chat.participants).filter(id => id !== currentUserId);
-  
-        fetch('index.php?route=students', {
+    .catch(() => ({ firstName: 'Unknown', lastName: 'User' }));
+}
+
+async function loadStudentList() {
+  try {
+    const list = document.getElementById('student-list');
+    list.innerHTML = '';
+    const limit = 5;
+    let page = 1;
+    let allStudents = [];
+
+    const initialResponse = await fetch(`index.php?route=students&page=${page}&limit=${limit}`, {
+      method: 'GET',
+      credentials: 'include'
+    });
+    if (!initialResponse.ok) throw new Error('Не вдалося завантажити студентів');
+    const initialData = await initialResponse.json();
+    allStudents = allStudents.concat(initialData.data);
+    const totalPages = initialData.totalPages || 1;
+
+    const pagePromises = [];
+    for (let p = 2; p <= totalPages; p++) {
+      pagePromises.push(
+        fetch(`index.php?route=students&page=${p}&limit=${limit}`, {
           method: 'GET',
-          credentials: 'include',
+          credentials: 'include'
         })
-          .then(res => res.json())
-          .then(response => {
-            const students = response.data;
-            const list = document.getElementById('student-list');
-            list.innerHTML = '';
-  
-            students.forEach(student => {
-              if (student.id == currentUserId || existingChatParticipants.includes(student.id)) return;
-  
-              studentCache[student.id] = student.name;
-  
-              const li = document.createElement('li');
-              li.textContent = student.name;
-              li.dataset.userId = student.id;
-  
-              li.addEventListener('click', () => {
-                document.getElementById('newChatModal').style.display = 'none';
-                addChatItem(student.id, student.name);
-                loadChatWith(student.id);
-              });
-  
-              list.appendChild(li);
-            });
-          })
-          .catch(err => console.error('Помилка при отриманні студентів:', err));
-      })
-      .catch(err => console.error('Помилка при отриманні чатів:', err));
-  }
-  
-  function clearLocalStorageForUser(userId) {
-    console.log('Очищено localStorage для:', userId);
-    localStorage.removeItem(`chats_${userId}`);
-  }
-  
-  window.logout = function () {
-    fetch('index.php?route=logout')
-      .then(response => {
-        if (response.ok) {
-          localStorage.removeItem('user');
-          updateStudentsStatusOffline();
-          if (currentUserId) {
-            clearLocalStorageForUser(currentUserId);
-          } else {
-            console.warn('currentUserId не визначено під час logout');
-          }
-          location.reload();
-        } else {
-          alert('Не вдалося вийти. Спробуйте ще раз.');
-        }
-      })
-      .catch(error => {
-        console.error('Помилка при логауті:', error);
-        alert('Помилка під час виходу. Перевірте підключення.');
-      });
-  };
-  
-  function addChatItem(userId, name) {
-    const chatList = document.getElementById('chat-list');
-  
-    if ([...chatList.children].some(el => el.dataset.userId === userId)) return;
-  
-    fetch('http://localhost:3000/chats/create', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ user1: currentUserId, user2: userId }),
-    })
-      .then(res => res.json())
-      .then(chat => {
-        const li = document.createElement('li');
-        li.classList.add('chat-item');
-        li.dataset.userId = userId;
-        li.innerHTML = `<img src="../ava.jpg" class="chat-avatar"><span>${name}</span>`;
-        li.addEventListener('click', () => {
-          loadChatWith(userId);
-          document.getElementById('room-title').textContent = `Chat room: ${name}`;
-        });
-        chatList.appendChild(li);
-        console.log('Додано чат з userId:', userId, 'іменем:', name);
-  
-        const existingChats = JSON.parse(localStorage.getItem(`chats_${currentUserId}`)) || [];
-        if (!existingChats.some(c => c.participants.includes(userId))) {
-          existingChats.push({
-            participants: [currentUserId, userId],
-            name: name,
-          });
-          localStorage.setItem(`chats_${currentUserId}`, JSON.stringify(existingChats));
-        }
-      })
-      .catch(err => console.error('Помилка створення чату:', err));
-  }
-  
-  function loadChatsFromStorage() {
-    const chatList = document.getElementById('chat-list');
-    chatList.innerHTML = '';
-  
-    fetch('index.php?route=students', {
-      method: 'GET',
-      credentials: 'include',
-    })
-      .then(res => res.json())
-      .then(response => {
-        const students = response.data;
-        students.forEach(student => {
-          studentCache[student.id] = student.name;
-        });
-        console.log('studentCache:', studentCache);
-  
-        fetch(`http://localhost:3000/chats/${currentUserId}`)
           .then(res => {
-            if (!res.ok) throw new Error(`Помилка ${res.status}: ${res.statusText}`);
+            if (!res.ok) throw new Error('Не вдалося завантажити сторінку ' + p);
             return res.json();
           })
-          .then(chats => {
-            console.log('Чати з сервера:', chats);
-            localStorage.setItem(`chats_${currentUserId}`, JSON.stringify(chats));
-  
-            const promises = chats.map(chat => {
-              const otherId = chat.participants.find(id => String(id) !== String(currentUserId));
-              console.log('chat:', chat, 'otherId:', otherId);
-              if (otherId) {
-                return getNameById(otherId).then(name => ({ otherId, name }));
-              }
-              return Promise.resolve(null);
-            });
-  
-            Promise.all(promises).then(results => {
-              results.forEach(result => {
-                if (result) {
-                  console.log('Додаємо чат з otherId:', result.otherId, 'іменем:', result.name);
-                  addChatItem(result.otherId, result.name);
-                }
-              });
-            });
-          })
-          .catch(err => console.error('Помилка завантаження чатів:', err));
-      })
-      .catch(err => console.error('Помилка завантаження студентів:', err));
-  }
-  
-  function loadChatWith(selectedUserId) {
-    chatIdParticipantId = selectedUserId;
-  
-    socket.emit('startChat', { user1: currentUserId, user2: selectedUserId }, (response) => {
-      if (response.error) {
-        console.error('Помилка при створенні чату:', response.error);
-        return;
-      }
-  
-      chatId = response.chatId;
-      document.getElementById('chat-messages').innerHTML = '';
-      loadMessages(chatId);
-    });
-  }
-  
-  function loadMessages(chatId) {
-    fetch(`http://localhost:3000/messages/${chatId}`)
-      .then(res => res.json())
-      .then(messages => {
-        console.log('Завантажені повідомлення:', messages);
-        if (messages.length > 0) {
-          messages.forEach(msg => appendMessage(msg, msg.senderId == currentUserId));
-        } else {
-          console.log('Повідомлень немає');
-        }
-      })
-      .catch(err => console.error('Помилка завантаження повідомлень:', err));
-  }
-  
-  function appendMessage(message, isSentByCurrentUser) {
-    const chatMessages = document.getElementById('chat-messages');
-    const msgElem = document.createElement('div');
-    msgElem.classList.add('message');
-    msgElem.classList.add(isSentByCurrentUser ? 'sent' : 'received');
-  
-    msgElem.innerHTML = `
-      <img src="../ava.jpg" alt="avatar" class="message-avatar">
-      <div class="message-text">
-          <div class="message-content">${message.text}</div>
-      </div>
-    `;
-  
-    chatMessages.appendChild(msgElem);
-    chatMessages.scrollTop = chatMessages.scrollHeight;
-  }
-  
-  const sendBtn = document.getElementById('send-button');
-  const messageInput = document.getElementById('message-input');
-  
-  sendBtn.addEventListener('click', () => {
-    const text = messageInput.value.trim();
-    if (!text || !chatId || !chatIdParticipantId) return;
-  
-    const message = {
-      chatId: chatId,
-      senderId: currentUserId,
-      receiverIds: [chatIdParticipantId],
-      text: text,
-    };
-  
-    socket.emit('sendMessage', message, (response) => {
-      if (response.error) {
-        console.error('Помилка надсилання повідомлення:', response.error);
-        return;
-      }
-      appendMessage(message, true);
-      messageInput.value = '';
-    });
-  });
-  
-  socket.on('receiveMessage', (message) => {
-    if (message.chatId === chatId && String(message.senderId) !== String(currentUserId)) {
-      appendMessage(message, false);
-    } else {
-      console.log('Нове повідомлення в іншому чаті або моє власне:', message);
+          .then(data => data.data)
+      );
     }
+
+    const additionalPages = await Promise.all(pagePromises);
+    additionalPages.forEach(pageData => {
+      allStudents = allStudents.concat(pageData);
+    });
+
+    allStudents.forEach(student => {
+      if (String(student.id) === currentUserId) return;
+      const fullName = student.name || 'Unknown Unknown';
+      const [firstName, lastName] = fullName.split(' ');
+      studentCache[student.id] = { firstName: firstName || 'Unknown', lastName: lastName || 'User' };
+      const li = document.createElement('li');
+      li.innerHTML = `<label for="student-${student.id}"><input type="checkbox" id="student-${student.id}" name="student" value="${student.id}" data-name="${student.name}"> ${firstName} ${lastName}</label>`;
+      list.appendChild(li);
+    });
+
+    const checkboxes = document.querySelectorAll('input[name="student"]');
+    checkboxes.forEach(checkbox => {
+      checkbox.addEventListener('change', () => {
+        const selectedCount = document.querySelectorAll('input[name="student"]:checked').length;
+        const groupNameSection = document.getElementById('group-name-section');
+        groupNameSection.style.display = selectedCount > 1 ? 'block' : 'none';
+      });
+    });
+  } catch (err) {
+    console.error('Помилка при отриманні студентів:', err);
+    alert('Не вдалося завантажити список студентів');
+  }
+}
+
+document.querySelector('.new-chat').addEventListener('click', () => {
+  document.getElementById('newChatModal').style.display = 'block';
+  document.getElementById('group-name-section').style.display = 'none';
+  document.getElementById('group-name-input').value = '';
+  loadStudentList();
+});
+
+document.getElementById('closeModal').addEventListener('click', () => {
+  document.getElementById('newChatModal').style.display = 'none';
+});
+
+document.getElementById('cancelChatBtn').addEventListener('click', () => {
+  document.getElementById('newChatModal').style.display = 'none';
+});
+
+document.getElementById('createChatBtn').addEventListener('click', () => {
+  const selectedInputs = [...document.querySelectorAll('input[name="student"]:checked')];
+  const selectedUsers = selectedInputs.map(input => input.value);
+
+  if (selectedUsers.length === 0) return alert('Оберіть хоча б одного студента!');
+
+  let groupName = '';
+  if (selectedUsers.length > 1) {
+    groupName = document.getElementById('group-name-input').value.trim();
+    if (!groupName) return alert('Введіть назву групи для групового чату!');
+  }
+
+  socket.emit('startChatRoom', {
+    userIds: [currentUserId, ...selectedUsers],
+    groupName: groupName,
+  }, ({ chatId: id, error }) => {
+    if (error) return alert(error);
+    chatId = id;
+    document.getElementById('room-title').textContent = `Chat room:`;
+    document.getElementById('newChatModal').style.display = 'none';
+    loadMessages(chatId);
+    updateMembers(chatId); // Оновлюємо аватарки після створення чату
   });
+});
+
+socket.on('newChatAvailable', (chat) => {
+  addChatToList(chat);
+});
+
+function addChatToList(chat) {
+  const chatList = document.getElementById('chat-list');
+  if ([...chatList.children].some(el => el.dataset.chatId === chat._id)) return;
+
+  let name = 'Невідомий чат';
+  if (chat.isGroup) {
+    name = chat.groupName;
+  } else {
+    const otherId = chat.participants.find(id => id !== String(currentUserId));
+    const user = studentCache[otherId] || { firstName: 'Приватний', lastName: 'чат' };
+    name = `${user.firstName} ${user.lastName}`;
+  }
+
+  const li = document.createElement('li');
+  li.classList.add('chat-item');
+  li.dataset.chatId = chat._id;
+  li.innerHTML = `<img src="../ava.jpg" class="chat-avatar"><span>${name}</span>`;
+  li.addEventListener('click', () => {
+    chatId = chat._id;
+    document.getElementById('room-title').textContent = `Chat room: ${name}`;
+    document.getElementById('chat-messages').innerHTML = '';
+    loadMessages(chatId);
+    updateMembers(chatId);
+    toggleAddButtonVisibility(chat.isGroup);
+  });
+  chatList.appendChild(li);
+}
+
+function loadChatsFromStorage() {
+  fetch('index.php?route=students')
+    .then(res => res.json())
+    .then(response => {
+      const students = response.data;
+      students.forEach(student => {
+        const fullName = student.name || 'Unknown Unknown';
+        const [firstName, lastName] = fullName.split(' ');
+        studentCache[student.id] = { firstName: firstName || 'Unknown', lastName: lastName || 'User' };
+      });
+      return fetch(`http://localhost:3000/chats/${currentUserId}`);
+    })
+    .then(res => res.json())
+    .then(chats => {
+      chats.forEach(async chat => {
+        if (!chat.isGroup) {
+          const otherId = chat.participants.find(id => id !== String(currentUserId));
+          if (!studentCache[otherId]) {
+            const name = await getNameById(otherId);
+            studentCache[otherId] = name;
+          }
+        }
+        addChatToList(chat);
+        if (chatId === chat._id) {
+          updateMembers(chatId); // Оновлюємо аватарки для поточного чату
+        }
+      });
+    })
+    .catch(err => console.error('Помилка завантаження чатів:', err));
+}
+
+function loadMessages(chatId) {
+  fetch(`http://localhost:3000/messages/${chatId}`)
+    .then(res => res.json())
+    .then(messages => {
+      Promise.all(messages.map(msg => appendMessage(msg, msg.senderId == currentUserId)));
+    })
+    .catch(err => console.error('Помилка завантаження повідомлень:', err));
+}
+
+async function appendMessage(message, isSentByCurrentUser) {
+  const chatMessages = document.getElementById('chat-messages');
+  const msgElem = document.createElement('div');
+  msgElem.classList.add('message', isSentByCurrentUser ? 'sent' : 'received');
+
+  let sender = studentCache[message.senderId] || (await getNameById(message.senderId));
+  let firstName = sender.firstName;
+  let lastName = sender.lastName;
+
+  msgElem.innerHTML = `
+    <div class="message-wrapper">
+      <img src="../ava.jpg" alt="avatar" class="message-avatar">
+      <div class="message-sender">
+        <span class="sender-firstname">${firstName}</span>
+        <span class="sender-lastname">${lastName}</span>
+      </div>
+    </div>
+    <div class="message-text">
+      <div class="message-content">${message.text}</div>
+    </div>
+  `;
+  chatMessages.appendChild(msgElem);
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+async function updateMembers(chatId) {
+  try {
+    const response = await fetch(`http://localhost:3000/chat/${chatId}`);
+    if (!response.ok) {
+      console.error('Помилка при завантаженні чату:', response.statusText);
+      return;
+    }
+
+    const chat = await response.json();
+    const participants = chat.participants || [];
+    const memberAvatars = document.querySelector('.member-avatars');
+    const membersLabel = document.querySelector('.members span');
+    memberAvatars.innerHTML = '';
+
+    // Оновлення підпису "Members (N)"
+    membersLabel.textContent = `Members `;
+
+    const visibleParticipants = participants.slice(0, 3);
+    const extraCount = participants.length - 3;
+
+    for (let i = 0; i < visibleParticipants.length; i++) {
+      const participantId = visibleParticipants[i];
+      const sender = studentCache[participantId] || (await getNameById(participantId));
+      const fullName = `${sender.firstName} ${sender.lastName}`;
+      const avatarImg = document.createElement('img');
+      avatarImg.src = '../ava.jpg';
+      avatarImg.alt = fullName;
+      avatarImg.className = 'member-avatar';
+      avatarImg.title = fullName; // 🔥 Tooltip
+      memberAvatars.appendChild(avatarImg);
+    }
+
+    if (extraCount > 0) {
+      const moreSpan = document.createElement('span');
+      moreSpan.className = 'more-members';
+      moreSpan.textContent = `+${extraCount}`;
+      memberAvatars.appendChild(moreSpan);
+    }
+  } catch (err) {
+    console.error('Помилка при завантаженні учасників:', err);
+  }
+}
+
+const membersSection = document.querySelector('.members');
+const addBtn = document.createElement('button');
+addBtn.textContent = '➕';
+addBtn.id = 'add-members-btn';
+addBtn.style.marginLeft = '10px';
+addBtn.style.display = 'none';
+membersSection.appendChild(addBtn);
+
+const modal = document.getElementById('add-members-modal');
+const closeModalBtn = document.getElementById('close-add-members-modal');
+const confirmBtn = document.getElementById('confirm-add-members');
+const cancelBtn = document.getElementById('cancel-add-members');
+
+// Закриття модального вікна кнопкою "х"
+closeModalBtn.addEventListener('click', () => {
+  modal.style.display = 'none';
+});
+
+// Закриття модального вікна при кліку поза ним
+modal.addEventListener('click', (e) => {
+  if (e.target === modal) {
+    modal.style.display = 'none';
+  }
+});
+
+// Підтвердження додавання учасників
+confirmBtn.addEventListener('click', () => {
+  const selected = [...document.querySelectorAll('input[name="new-member"]:checked')].map(i => i.value);
+  if (selected.length === 0) return alert('Виберіть хоча б одного');
+
+  socket.emit('addMembersToChat', {
+    chatId,
+    newUserIds: selected
+  }, ({ success, error }) => {
+    if (error) return alert(error);
+    updateMembers(chatId);
+    modal.style.display = 'none';
+  });
+});
+
+// Скасування
+cancelBtn.addEventListener('click', () => {
+  modal.style.display = 'none';
+});
+
+addBtn.addEventListener('click', async () => {
+  const res = await fetch(`http://localhost:3000/chat/${chatId}`);
+  const chat = await res.json();
+  if (!chat.isGroup) return;
+  console.log('[+] Кнопка натиснута, чатId:', chatId);
+
+  // Ось тут - підвантажуємо ВСІх студентів, як у loadStudentList()
+  let allStudents = [];
+  const limit = 5;
+  let page = 1;
+
+  // Спершу отримуємо першу сторінку і totalPages
+  const initialResponse = await fetch(`index.php?route=students&page=${page}&limit=${limit}`, { credentials: 'include' });
+  if (!initialResponse.ok) {
+    alert('Не вдалося завантажити студентів');
+    return;
+  }
+  const initialData = await initialResponse.json();
+  allStudents = allStudents.concat(initialData.data);
+  const totalPages = initialData.totalPages || 1;
+
+  // Далі паралельно завантажуємо інші сторінки
+  const pagePromises = [];
+  for (let p = 2; p <= totalPages; p++) {
+    pagePromises.push(
+      fetch(`index.php?route=students&page=${p}&limit=${limit}`, { credentials: 'include' })
+        .then(res => {
+          if (!res.ok) throw new Error(`Не вдалося завантажити сторінку ${p}`);
+          return res.json();
+        })
+        .then(data => data.data)
+    );
+  }
+
+  const additionalPages = await Promise.all(pagePromises);
+  additionalPages.forEach(pageData => {
+    allStudents = allStudents.concat(pageData);
+  });
+
+  // Тепер фільтруємо тих, хто не в чаті
+  const nonMembers = allStudents.filter(s => !chat.participants.includes(String(s.id)));
+  if (nonMembers.length === 0) return alert('Усі студенти вже в чаті');
+
+  // Малюємо список у модалці
+  const listHtml = nonMembers.map(s => {
+    return `<label><input type="checkbox" name="new-member" value="${s.id}"> ${s.name}</label><br>`;
+  }).join('');
+
+  const membersList = document.getElementById('members-list');
+  membersList.innerHTML = listHtml;
+
+  modal.style.display = 'block';
+});
+
+
+// === Слухач оновлення чату ===
+socket.on('chatUpdated', chat => {
+  if (chat._id === chatId) {
+    updateMembers(chatId);
+  }
+});
+
+// === Показати або сховати кнопку в addChatToList або при відкритті чату ===
+function toggleAddButtonVisibility(isGroup) {
+  const addBtn = document.getElementById('add-members-btn');
+  if (addBtn) {
+    addBtn.style.display = isGroup ? 'inline-block' : 'none';
+  }
+}
+
+
+const sendBtn = document.getElementById('send-button');
+const messageInput = document.getElementById('message-input');
+
+sendBtn.addEventListener('click', async () => {
+  const text = messageInput.value.trim();
+  if (!text || !chatId) return;
+  const message = {
+    chatId: chatId,
+    senderId: currentUserId,
+    text: text,
+  };
+  socket.emit('sendMessage', message, async (response) => {
+    if (response.error) return console.error('❌', response.error);
+    await appendMessage(message, true);
+    messageInput.value = '';
+  });
+});
+
+socket.on('receiveMessage', async (message) => {
+  if (message.chatId === chatId && String(message.senderId) !== String(currentUserId)) {
+    await appendMessage(message, false);
+  }
+});

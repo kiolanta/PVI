@@ -86,8 +86,7 @@
                     <div class="members">
                         <span>Members</span>
                         <div class="member-avatars">
-                            <img src="../ava.jpg" alt="Member" class="member-avatar" />
-                            <span class="more-members">+1</span>
+                            <!-- Аватарки генеруватимуться динамічно -->
                         </div>
                     </div>
                 </div>
@@ -104,17 +103,56 @@
         </div>
     </main>
 
-    <!-- 🔥 Модальне вікно для вибору нового співрозмовника -->
-    <div class="modal" id="newChatModal">
+        
+    <div id="newChatModal" class="modal">
         <div class="modal-content">
-            <span class="close-button" id="closeModal">&times;</span>
-            <h3>Виберіть студента для нового чату:</h3>
-            <ul id="student-list">
-                <!-- Завантажуються з бази даних -->
-            </ul>
+            <div class="modal-header">
+            <h2>Create New Chat</h2>
+            <span class="close" id="closeModal">×</span>
+            </div>
+            <hr class="header-divider">
+            <div class="modal-body">
+            <div class="form-group">
+                <label for="student-list">Select Users:</label>
+                <div class="input-wrapper">
+                <ul id="student-list" class="student-list"></ul>
+                </div>
+            </div>
+            <div class="form-group" id="group-name-section" style="display: none;" aria-live="polite">
+                <label for="group-name-input">Group Name:</label>
+                <div class="input-wrapper">
+                <input type="text" id="group-name-input" placeholder="Enter group name..." required>
+                </div>
+            </div>
+            </div>
+            <div class="modal-footer">
+            <button type="button" id="cancelChatBtn" class="cancel-btn">Cancel</button>
+            <button type="button" id="createChatBtn" class="confirm-btn">Create Chat</button>
+            </div>
         </div>
     </div>
 
+    <div id="add-members-modal" class="modal" style="display: none;">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2>Add Members</h2>
+      <span class="close" id="close-add-members-modal">&times;</span>
+    </div>
+    <hr class="header-divider">
+    <div class="modal-body">
+      <div class="form-group">
+        <label for="members-list">Select Users to Add:</label>
+        <div class="input-wrapper">
+          <div id="members-list" class="student-list"></div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button type="button" id="cancel-add-members" class="cancel-btn">Cancel</button>
+      <button type="button" id="confirm-add-members" class="confirm-btn">Add</button>
+    </div>
+  </div>
+</div>
     <script src="http://localhost:3000/socket.io/socket.io.js"></script>
     <script src="../script.js"></script>
     </body>
