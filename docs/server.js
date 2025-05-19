@@ -32,111 +32,110 @@ const onlineUsers = new Map();
 io.on('connection', (socket) => {
   console.log('🔌 Користувач підключився:', socket.id);
 
-  // Реєстрація користувача
   socket.on('register', (userId) => {
     onlineUsers.set(userId, socket.id);
     console.log(`🧍 Користувач ${userId} зареєстрований`);
   });
 
-  socket.on('startChatRoom', async ({ userIds, groupName }, callback) => {
-  try {
-    const isGroup = userIds.length > 2;
-    let chat;
+  socket.on('joinChatRoom', (chatId) => {
+    socket.join(chatId);
+    console.log(`Користувач ${socket.id} приєднався до кімнати ${chatId}`);
+  });
 
-    if (isGroup) {
-      chat = await Chat.create({
-        participants: userIds,
-        isGroup: true,
-        groupName,
-      });
-    } else {
-      chat = await Chat.findOne({
-        participants: { $all: userIds, $size: 2 },
-        isGroup: false,
-      });
-      if (!chat) {
+  socket.on('startChatRoom', async ({ userIds, groupName }, callback) => {
+    try {
+      const isGroup = userIds.length > 2;
+      let chat;
+
+      if (isGroup) {
         chat = await Chat.create({
           participants: userIds,
+          isGroup: true,
+          groupName,
+        });
+      } else {
+        chat = await Chat.findOne({
+          participants: { $all: userIds, $size: 2 },
           isGroup: false,
         });
+        if (!chat) {
+          chat = await Chat.create({
+            participants: userIds,
+            isGroup: false,
+          });
+        }
       }
+
+      socket.join(chat._id.toString());
+      callback({ chatId: chat._id.toString() });
+
+      userIds.forEach(uid => {
+        const sockId = onlineUsers.get(uid);
+        if (sockId) {
+          io.to(sockId).emit('newChatAvailable', chat);
+        }
+      });
+    } catch (err) {
+      console.error('❌ Помилка створення чату:', err);
+      callback({ error: 'Помилка створення чату' });
     }
+  });
 
-    socket.join(chat._id.toString());
-    callback({ chatId: chat._id.toString() });
-
-    userIds.forEach(uid => {
-      const sockId = onlineUsers.get(uid);
-      if (sockId) {
-        io.to(sockId).emit('newChatAvailable', chat);
+  socket.on('addMembersToChat', async ({ chatId, newUserIds }, callback) => {
+    try {
+      const chat = await Chat.findById(chatId);
+      if (!chat || !chat.isGroup) {
+        return callback({ error: 'Чат не знайдено або не є груповим' });
       }
-    });
-  } catch (err) {
-    console.error('❌ Помилка створення чату:', err);
-    callback({ error: 'Помилка створення чату' });
-  }
-});
 
-socket.on('addMembersToChat', async ({ chatId, newUserIds }, callback) => {
-  try {
-    const chat = await Chat.findById(chatId);
-    if (!chat || !chat.isGroup) {
-      return callback({ error: 'Чат не знайдено або не є груповим' });
+      // Уникаємо дублікатів
+      const updatedParticipants = [...new Set([...chat.participants, ...newUserIds])];
+      chat.participants = updatedParticipants;
+      await chat.save();
+
+      // Оповістити всіх нових користувачів
+      newUserIds.forEach(uid => {
+        const sockId = onlineUsers.get(uid);
+        if (sockId) {
+          io.to(sockId).emit('newChatAvailable', chat);
+        }
+      });
+
+      // Оновити всім іншим теж
+      updatedParticipants.forEach(uid => {
+        const sockId = onlineUsers.get(uid);
+        if (sockId) {
+          io.to(sockId).emit('chatUpdated', chat);
+        }
+      });
+
+      callback({ success: true, participants: updatedParticipants });
+    } catch (err) {
+      console.error('❌ Помилка при додаванні учасників:', err);
+      callback({ error: 'Не вдалося додати учасників' });
     }
-
-    // Уникаємо дублікатів
-    const updatedParticipants = [...new Set([...chat.participants, ...newUserIds])];
-    chat.participants = updatedParticipants;
-    await chat.save();
-
-    // Оповістити всіх нових користувачів
-    newUserIds.forEach(uid => {
-      const sockId = onlineUsers.get(uid);
-      if (sockId) {
-        io.to(sockId).emit('newChatAvailable', chat);
-      }
-    });
-
-    // Оновити всім іншим теж
-    updatedParticipants.forEach(uid => {
-      const sockId = onlineUsers.get(uid);
-      if (sockId) {
-        io.to(sockId).emit('chatUpdated', chat);
-      }
-    });
-
-    callback({ success: true, participants: updatedParticipants });
-  } catch (err) {
-    console.error('❌ Помилка при додаванні учасників:', err);
-    callback({ error: 'Не вдалося додати учасників' });
-  }
-});
-
+  });
 
   socket.on('sendMessage', async (message, callback) => {
     try {
       const newMessage = new Message({
         chatId: message.chatId,
         senderId: message.senderId,
-        receiverIds: message.receiverIds,
         text: message.text,
         timestamp: new Date(),
       });
-  
-      // Переконайся, що повідомлення зберігається правильно в MongoDB
-      const savedMessage = await newMessage.save(); 
-      console.log('Повідомлення збережено в MongoDB:', savedMessage);
-  
-      io.to(message.chatId).emit('receiveMessage', savedMessage); // Відправляємо в кімнату чат
+
+      const savedMessage = await newMessage.save();
+      console.log(`Повідомлення надіслано в кімнату ${message.chatId}:`, savedMessage);
+
+      io.to(message.chatId).emit('receiveMessage', savedMessage);
       callback({ success: true });
     } catch (err) {
       console.error('❌ Помилка збереження повідомлення:', err);
       callback({ error: 'Не вдалося зберегти повідомлення' });
     }
   });
-  
 
-  // Відключення користувача
   socket.on('disconnect', () => {
     for (let [userId, sockId] of onlineUsers.entries()) {
       if (sockId === socket.id) {
@@ -149,23 +148,21 @@ socket.on('addMembersToChat', async ({ chatId, newUserIds }, callback) => {
 });
 
 app.post('/chats/create', async (req, res) => {
-    const { user1, user2 } = req.body;
-    let chat = await Chat.findOne({ participants: { $all: [user1, user2] } });
-    if (!chat) {
-      chat = new Chat({ participants: [user1, user2] });
-      await chat.save();
-    }
-    res.json(chat);
-  });
-  
-// На сервері (Express.js)
-app.get('/chats/:userId', async (req, res) => {
-    const { userId } = req.params;
-    const chats = await Chat.find({ participants: userId });
-    res.json(chats);
-  });
+  const { user1, user2 } = req.body;
+  let chat = await Chat.findOne({ participants: { $all: [user1, user2] } });
+  if (!chat) {
+    chat = new Chat({ participants: [user1, user2] });
+    await chat.save();
+  }
+  res.json(chat);
+});
 
-// Маршрут для отримання всіх повідомлень чату
+app.get('/chats/:userId', async (req, res) => {
+  const { userId } = req.params;
+  const chats = await Chat.find({ participants: userId });
+  res.json(chats);
+});
+
 app.get('/messages/:chatId', async (req, res) => {
   try {
     const chatId = req.params.chatId;
@@ -177,16 +174,14 @@ app.get('/messages/:chatId', async (req, res) => {
   }
 });
 
-// На сервері (наприклад, Express.js)
 app.get('/chats/verify/:user1/:user2', async (req, res) => {
-    const { user1, user2 } = req.params;
-    const chat = await Chat.findOne({
-      participants: { $all: [user1, user2] }
-    });
-    res.json(!!chat); // Повертає true, якщо чат існує, інакше false
+  const { user1, user2 } = req.params;
+  const chat = await Chat.findOne({
+    participants: { $all: [user1, user2] }
   });
+  res.json(!!chat); // Повертає true, якщо чат існує, інакше false
+});
 
-// ✅ Отримати чат за ID (для updateMembers)
 app.get('/chat/:chatId', async (req, res) => {
   try {
     const chat = await Chat.findById(req.params.chatId);

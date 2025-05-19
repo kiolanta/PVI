@@ -186,7 +186,6 @@ const bellIcon = document.querySelector(".fa-bell");
 
 
 
-
 const socket = io("http://localhost:3000");
 const currentUserId = String(user?.id);
 let chatId = null;
@@ -280,22 +279,22 @@ async function loadStudentList() {
   }
 }
 
-document.querySelector('.new-chat').addEventListener('click', () => {
+document.querySelector('.new-chat')?.addEventListener('click', () => {
   document.getElementById('newChatModal').style.display = 'block';
   document.getElementById('group-name-section').style.display = 'none';
   document.getElementById('group-name-input').value = '';
   loadStudentList();
 });
 
-document.getElementById('closeModal').addEventListener('click', () => {
+document.getElementById('closeModal')?.addEventListener('click', () => {
   document.getElementById('newChatModal').style.display = 'none';
 });
 
-document.getElementById('cancelChatBtn').addEventListener('click', () => {
+document.getElementById('cancelChatBtn')?.addEventListener('click', () => {
   document.getElementById('newChatModal').style.display = 'none';
 });
 
-document.getElementById('createChatBtn').addEventListener('click', () => {
+document.getElementById('createChatBtn')?.addEventListener('click', () => {
   const selectedInputs = [...document.querySelectorAll('input[name="student"]:checked')];
   const selectedUsers = selectedInputs.map(input => input.value);
 
@@ -316,12 +315,13 @@ document.getElementById('createChatBtn').addEventListener('click', () => {
     document.getElementById('room-title').textContent = `Chat room:`;
     document.getElementById('newChatModal').style.display = 'none';
     loadMessages(chatId);
-    updateMembers(chatId); // Оновлюємо аватарки після створення чату
+    updateMembers(chatId);
   });
 });
 
 socket.on('newChatAvailable', (chat) => {
   addChatToList(chat);
+  socket.emit('joinChatRoom', chat._id);
 });
 
 function addChatToList(chat) {
@@ -345,11 +345,13 @@ function addChatToList(chat) {
     chatId = chat._id;
     document.getElementById('room-title').textContent = `Chat room: ${name}`;
     document.getElementById('chat-messages').innerHTML = '';
-    loadMessages(chatId);
-    updateMembers(chatId);
+    socket.emit('joinChatRoom', chat._id);
+    loadMessages(chat._id);
+    updateMembers(chat._id);
     toggleAddButtonVisibility(chat.isGroup);
   });
   chatList.appendChild(li);
+  socket.emit('joinChatRoom', chat._id);
 }
 
 function loadChatsFromStorage() {
@@ -375,8 +377,9 @@ function loadChatsFromStorage() {
           }
         }
         addChatToList(chat);
+        socket.emit('joinChatRoom', chat._id);
         if (chatId === chat._id) {
-          updateMembers(chatId); // Оновлюємо аватарки для поточного чату
+          updateMembers(chatId);
         }
       });
     })
@@ -431,7 +434,6 @@ async function updateMembers(chatId) {
     const membersLabel = document.querySelector('.members span');
     memberAvatars.innerHTML = '';
 
-    // Оновлення підпису "Members (N)"
     membersLabel.textContent = `Members `;
 
     const visibleParticipants = participants.slice(0, 3);
@@ -445,7 +447,7 @@ async function updateMembers(chatId) {
       avatarImg.src = '../ava.jpg';
       avatarImg.alt = fullName;
       avatarImg.className = 'member-avatar';
-      avatarImg.title = fullName; // 🔥 Tooltip
+      avatarImg.title = fullName;
       memberAvatars.appendChild(avatarImg);
     }
 
@@ -473,19 +475,16 @@ const closeModalBtn = document.getElementById('close-add-members-modal');
 const confirmBtn = document.getElementById('confirm-add-members');
 const cancelBtn = document.getElementById('cancel-add-members');
 
-// Закриття модального вікна кнопкою "х"
 closeModalBtn.addEventListener('click', () => {
   modal.style.display = 'none';
 });
 
-// Закриття модального вікна при кліку поза ним
 modal.addEventListener('click', (e) => {
   if (e.target === modal) {
     modal.style.display = 'none';
   }
 });
 
-// Підтвердження додавання учасників
 confirmBtn.addEventListener('click', () => {
   const selected = [...document.querySelectorAll('input[name="new-member"]:checked')].map(i => i.value);
   if (selected.length === 0) return alert('Виберіть хоча б одного');
@@ -500,7 +499,6 @@ confirmBtn.addEventListener('click', () => {
   });
 });
 
-// Скасування
 cancelBtn.addEventListener('click', () => {
   modal.style.display = 'none';
 });
@@ -509,14 +507,11 @@ addBtn.addEventListener('click', async () => {
   const res = await fetch(`http://localhost:3000/chat/${chatId}`);
   const chat = await res.json();
   if (!chat.isGroup) return;
-  console.log('[+] Кнопка натиснута, чатId:', chatId);
 
-  // Ось тут - підвантажуємо ВСІх студентів, як у loadStudentList()
   let allStudents = [];
   const limit = 5;
   let page = 1;
 
-  // Спершу отримуємо першу сторінку і totalPages
   const initialResponse = await fetch(`index.php?route=students&page=${page}&limit=${limit}`, { credentials: 'include' });
   if (!initialResponse.ok) {
     alert('Не вдалося завантажити студентів');
@@ -526,7 +521,6 @@ addBtn.addEventListener('click', async () => {
   allStudents = allStudents.concat(initialData.data);
   const totalPages = initialData.totalPages || 1;
 
-  // Далі паралельно завантажуємо інші сторінки
   const pagePromises = [];
   for (let p = 2; p <= totalPages; p++) {
     pagePromises.push(
@@ -544,11 +538,9 @@ addBtn.addEventListener('click', async () => {
     allStudents = allStudents.concat(pageData);
   });
 
-  // Тепер фільтруємо тих, хто не в чаті
   const nonMembers = allStudents.filter(s => !chat.participants.includes(String(s.id)));
   if (nonMembers.length === 0) return alert('Усі студенти вже в чаті');
 
-  // Малюємо список у модалці
   const listHtml = nonMembers.map(s => {
     return `<label><input type="checkbox" name="new-member" value="${s.id}"> ${s.name}</label><br>`;
   }).join('');
@@ -559,22 +551,18 @@ addBtn.addEventListener('click', async () => {
   modal.style.display = 'block';
 });
 
-
-// === Слухач оновлення чату ===
 socket.on('chatUpdated', chat => {
   if (chat._id === chatId) {
     updateMembers(chatId);
   }
 });
 
-// === Показати або сховати кнопку в addChatToList або при відкритті чату ===
 function toggleAddButtonVisibility(isGroup) {
   const addBtn = document.getElementById('add-members-btn');
   if (addBtn) {
     addBtn.style.display = isGroup ? 'inline-block' : 'none';
   }
 }
-
 
 const sendBtn = document.getElementById('send-button');
 const messageInput = document.getElementById('message-input');
@@ -588,8 +576,8 @@ sendBtn.addEventListener('click', async () => {
     text: text,
   };
   socket.emit('sendMessage', message, async (response) => {
-    if (response.error) return console.error('❌', response.error);
-    await appendMessage(message, true);
+    if (response.error) return console.error('❌ Помилка надсилання:', response.error);
+    await appendMessage({ ...message, timestamp: new Date() }, true);
     messageInput.value = '';
   });
 });
