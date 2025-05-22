@@ -168,23 +168,43 @@ function updateStudentsStatusOffline() {
     });
 }
 
-const bell = document.querySelector(".notification-bell");
-const indicator = document.getElementById("notificationIndicator");
-const bellIcon = document.querySelector(".fa-bell"); 
+  const bell = document.getElementById("notificationBell");
+  bell.addEventListener("click", () => {
+    window.location.href = "messages.html";
+  });
+  const indicator = document.getElementById("notificationIndicator");
+  const dropdown  = document.getElementById("notificationDropdown"); 
 
-  if (bell && indicator && bellIcon) {
-    bellIcon.classList.add("bell-animate");
-    setTimeout(() => {
-      indicator.style.display = "block";
-    }, 800); 
-    
-    bell.addEventListener("click", function() {
-      indicator.style.display = "none";
-      window.location.href = "messages.html";
-    });
+  async function triggerNotification(message) {
+
+    bell.querySelector("i").classList.add("bell-animate");
+    setTimeout(() => bell.querySelector("i").classList.remove("bell-animate"), 1000);
+
+    indicator.style.display = "block";
+    const count = parseInt(indicator.textContent||"0",10)+1;
+    indicator.textContent = count;
+
+    const { firstName, lastName } = await getNameById(message.senderId);
+    const item = document.createElement("div");
+    item.className = "notification-item";
+    item.innerHTML = `
+      <img src="../ava.jpg" alt="Avatar">
+      <div>
+        <span>${firstName} ${lastName}</span>
+        <div class="messagee">${message.text}</div>
+      </div>
+    `;
+
+  item.addEventListener("click", () => {
+    console.log("➡️ Notification clicked, going to chatId =", message.chatId);
+    window.location.href = `messages.html?chatId=${message.chatId}`;
+  });
+
+  dropdown.prepend(item);
+  if (dropdown.children.length > 5) {
+    dropdown.removeChild(dropdown.lastChild);
   }
-
-
+}
 
 const socket = io("http://localhost:3000");
 const currentUserId = String(user?.id);
@@ -345,9 +365,10 @@ function addChatToList(chat) {
     chatId = chat._id;
     document.getElementById('room-title').textContent = `Chat room: ${name}`;
     document.getElementById('chat-messages').innerHTML = '';
-    socket.emit('joinChatRoom', chat._id);
-    loadMessages(chat._id);
-    updateMembers(chat._id);
+    socket.emit('joinChatRoom', chat._id, () => {
+      loadMessages(chat._id);
+      updateMembers(chat._id);
+    });
     toggleAddButtonVisibility(chat.isGroup);
   });
   chatList.appendChild(li);
@@ -582,8 +603,15 @@ sendBtn.addEventListener('click', async () => {
   });
 });
 
-socket.on('receiveMessage', async (message) => {
-  if (message.chatId === chatId && String(message.senderId) !== String(currentUserId)) {
-    await appendMessage(message, false);
-  }
-});
+socket.on("receiveMessage", async (message) => {
+    if (String(message.senderId) === currentUserId) return;
+
+    const onMessagesPage = window.location.pathname.endsWith("messages.html");
+    const inSameChat     = (chatId === message.chatId);
+
+    if (onMessagesPage && inSameChat) {
+      await appendMessage(message, false);
+    } else {
+      await triggerNotification(message);
+    }
+  });

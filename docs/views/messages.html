@@ -28,35 +28,18 @@
                             <i class="fa-regular fa-bell"></i>
                             <span class="notification-indicator" id="notificationIndicator"></span>
                         </div>
-                        <div class="notification-dropdown">
-                            <div class="notification-item">
-                                <img src="../ava.jpg" alt="Avatar">
-                                <span>Admin</span>
-                                <div class="messagee">Перевірте пошту.</div>
-                            </div>
-                            <div class="notification-item">
-                                <img src="../ava.jpg" alt="Avatar">
-                                <span>Iolanta K.</span>
-                                <div class="messagee">Привітусики! Як справи? Чуєш не хочеш піти погуляти?</div>
-                            </div>
-                            <div class="notification-item">
-                                <img src="../ava.jpg" alt="Avatar">
-                                <span>Ann S.</span>
-                                <div class="messagee">Що задали?</div>
-                            </div>
+                        <div class="notification-dropdown" id="notificationDropdown"></div>
+                            <!-- Сповіщення будуть додаватися динамічно через JavaScript -->
+                    </div>
+                    <div class="profile-menu">
+                        <img class="avatar" src="../ava.jpg" alt="User Avatar">
+                        <span class="username">Iolanta Kolchyntseva</span>
+                        <div class="profile-header">
+                            <a href="../views/profile.html">Profile</a>
+                            <button onclick="logout()">Log Out</button>
                         </div>
                     </div>
-            
-                        <div class="profile-menu">
-                            <img class="avatar" src="../ava.jpg" alt="User Avatar">
-                            <span class="username">Iolanta Kolchyntseva</span>
-                            <div class="profile-header">
-                                <a href="../views/profile.html">Profile</a>
-                                <button onclick="logout()">Log Out</button>
-                            </div>
-                        </div>
                 </div>
-            </div>
         </header>
 
     <aside class="sideburger">
@@ -154,6 +137,6 @@
   </div>
 </div>
     <script src="http://localhost:3000/socket.io/socket.io.js"></script>
-    <script src="../script.js"></script>
+    <script defer src="../script.js"></script>
     </body>
 </html>

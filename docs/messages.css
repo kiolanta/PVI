@@ -14,7 +14,7 @@ body {
     align-items: center;
     background-color: rgb(123, 100, 160);
     padding: 13px 10px;
-    position: fixed; /* Фіксуємо хедер зверху */
+    position: fixed;
     top: 0;
     width: 99%;
     z-index: 1000;
@@ -43,9 +43,9 @@ body {
 }
 
 .fa-bell:hover {
-    color: rgb(182, 213, 234); 
+    color: rgb(182, 213, 234);
 }
- 
+
 @keyframes bell-shake {
     0% { transform: rotate(0); }
     20% { transform: rotate(-10deg); }
@@ -62,15 +62,15 @@ body {
 .notification-indicator {
     display: none;
     position: absolute;
-    top: 6px;  
-    right: 8px;  
+    top: 6px;
+    right: 8px;
     width: 10px;
     height: 10px;
     background-color: #efa6a6;
     border-radius: 50%;
     box-shadow: 0 0 5px rgba(231, 30, 30, 0.8);
 }
- 
+
 .avatar {
     height: 32px;
     border-radius: 50%;
@@ -97,7 +97,7 @@ body {
 
 .profile-header {
     position: absolute;
-    top: 35px; 
+    top: 35px;
     right: 0;
     background: white;
     border: 1px solid #ccc;
@@ -152,6 +152,8 @@ body {
     border-radius: 8px;
     padding: 10px;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+    max-height: 400px;
+    overflow-y: auto;
     z-index: 1100;
 }
 
@@ -159,19 +161,9 @@ body {
     display: block;
 }
 
-.notification-item:hover {
-    background-color: rgb(182, 213, 234);
-    border-radius: 30px;
-}
-
-.notification-item:hover .message {
-    background-color: #e0e0e0; 
-}
-
 .notification-item {
     display: flex;
     align-items: center;
-    white-space: nowrap;
     gap: 10px;
     padding: 10px;
     border-bottom: 3px solid #eee;
@@ -183,19 +175,30 @@ body {
     border-bottom: none;
 }
 
+.notification-item:hover {
+    background-color: rgb(182, 213, 234);
+    border-radius: 30px;
+}
+
+.notification-item:hover .messagee {
+    background-color: #e0e0e0;
+}
+
 .notification-item img {
     height: 40px;
     border-radius: 50%;
     border: 2px solid lavender;
 }
 
+
 .messagee {
-   background: #ccc;
+    background: #ccc;
     padding: 10px 15px;
     border-radius: 10px;
-    max-width: 200px; 
+    max-width: 200px;
     overflow: hidden;
     text-overflow: ellipsis;
+    white-space: nowrap;
     display: inline-block;
 }
 

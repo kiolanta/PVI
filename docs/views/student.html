@@ -19,47 +19,30 @@
   </head>
 
   <body>
-     <header>
-        <div class="header">
-           <div class="logo">
-              <a href="../views/student.html">LPNU</a>
-          </div>
-            <div class="user-info">
-               <div class="notification-header">
-                <div class="notification-bell" id="notificationBell">
-                  <i class="fa-regular fa-bell"></i>
-                  <span class="notification-indicator" id="notificationIndicator"></span>
+      <header>
+            <div class="header">
+                <div class="logo">
+                    <a href="../views/student.html">LPNU</a>
                 </div>
-                  <div class="notification-dropdown">
-                     <div class="notification-item">
-                        <img src="../ava.jpg" alt="Avatar">
-                        <span>Admin</span>
-                        <div class="message">Перевірте пошту.</div>
+                <div class="user-info">
+                    <div class="notification-header">
+                        <div class="notification-bell" id="notificationBell">
+                            <i class="fa-regular fa-bell"></i>
+                            <span class="notification-indicator" id="notificationIndicator"></span>
+                        </div>
+                        <div class="notification-dropdown" id="notificationDropdown"></div>
+                            <!-- Сповіщення будуть додаватися динамічно через JavaScript -->
                     </div>
-                     <div class="notification-item">
-                        <img src="../ava.jpg" alt="Avatar">
-                        <span>Iolanta K.</span>
-                        <div class="message">Привітусики! Як справи? Чуєш не хочеш піти погуляти?</div>
+                    <div class="profile-menu">
+                        <img class="avatar" src="../ava.jpg" alt="User Avatar">
+                        <span class="username">Iolanta Kolchyntseva</span>
+                        <div class="profile-header">
+                            <a href="../views/profile.html">Profile</a>
+                            <button onclick="logout()">Log Out</button>
+                        </div>
                     </div>
-                     <div class="notification-item">
-                        <img src="../ava.jpg" alt="Avatar">
-                        <span>Ann S.</span>
-                        <div class="message">Що задали?</div>
-                    </div>
-                  </div>
-              </div>
-      
-               <div class="profile-menu">
-                  <img class="avatar" src="../ava.jpg" alt="User Avatar">
-                  <span class="username">Iolanta Kolchyntseva</span>
-                   <div class="profile-header">
-                      <a href="../views/profile.html">Profile</a>
-                      <button onclick="logout()">Log Out</button>
-                  </div>
-              </div>
-          </div>
-       </div>
-    </header>
+                </div>
+        </header>
 
     <nav class="sideburger">
         <ul class="menu">
@@ -283,7 +266,8 @@
           </div>
         </div>
     </main>
-      <script src="../script.js"></script>
+      <script src="http://localhost:3000/socket.io/socket.io.js"></script>
+      <script defer src="../script.js"></script>
       <script src="../student.js"></script>
   </body>
 </html>

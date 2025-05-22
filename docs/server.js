@@ -37,9 +37,9 @@ io.on('connection', (socket) => {
     console.log(`🧍 Користувач ${userId} зареєстрований`);
   });
 
-  socket.on('joinChatRoom', (chatId) => {
+  socket.on('joinChatRoom', (chatId, ack) => {
     socket.join(chatId);
-    console.log(`Користувач ${socket.id} приєднався до кімнати ${chatId}`);
+    if (typeof ack === 'function') ack();
   });
 
   socket.on('startChatRoom', async ({ userIds, groupName }, callback) => {
